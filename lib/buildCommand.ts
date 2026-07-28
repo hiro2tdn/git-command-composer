@@ -75,6 +75,11 @@ function toggleApplies(
   if (t.requiresToggle && !toggles[t.requiresToggle]) return false;
   if (t.requiresRadio && radios[t.requiresRadio.group] !== t.requiresRadio.id)
     return false;
+  if (
+    t.excludeWhenRadio &&
+    radios[t.excludeWhenRadio.group] === t.excludeWhenRadio.id
+  )
+    return false;
   return true;
 }
 

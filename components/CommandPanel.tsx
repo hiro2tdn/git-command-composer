@@ -28,6 +28,11 @@ function shouldShowToggle(
     state.radios[toggle.requiresRadio.group] !== toggle.requiresRadio.id
   )
     return false;
+  if (
+    toggle.excludeWhenRadio &&
+    state.radios[toggle.excludeWhenRadio.group] === toggle.excludeWhenRadio.id
+  )
+    return false;
   return true;
 }
 
@@ -74,7 +79,9 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
           (state.toggles[t.id] ?? false) &&
           (!t.requiresToggle || state.toggles[t.requiresToggle]) &&
           (!t.requiresRadio ||
-            state.radios[t.requiresRadio.group] === t.requiresRadio.id)
+            state.radios[t.requiresRadio.group] === t.requiresRadio.id) &&
+          (!t.excludeWhenRadio ||
+            state.radios[t.excludeWhenRadio.group] !== t.excludeWhenRadio.id)
       ).length,
     [goal.command.toggles, state.toggles, state.radios]
   );

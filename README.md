@@ -44,7 +44,3 @@ Settings → Pages → Source: **GitHub Actions**
   },
 }
 ```
-
-## ライセンス
-
-MIT

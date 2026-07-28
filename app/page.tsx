@@ -22,10 +22,6 @@ export default function Home() {
       <main className="mx-auto max-w-6xl px-6 py-10">
         <AppShell />
       </main>
-
-      <footer className="border-t border-border py-8 text-center text-sm text-muted">
-        Git Command Composer
-      </footer>
     </>
   );
 }
