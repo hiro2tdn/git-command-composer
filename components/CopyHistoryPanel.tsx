@@ -64,7 +64,7 @@ export function CopyHistoryPanel() {
               <CopyButton
                 command={entry.command}
                 label={entry.label}
-                variant="icon"
+                recordHistory={false}
               />
               <button
                 type="button"

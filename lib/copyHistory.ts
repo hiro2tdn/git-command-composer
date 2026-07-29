@@ -46,11 +46,13 @@ export function addCopyHistoryEntry(
   if (!trimmed) return entries;
 
   const now = Date.now();
+  const existing = entries.find((e) => e.command === trimmed);
   const withoutDuplicate = entries.filter((e) => e.command !== trimmed);
   const entry: CopyHistoryEntry = {
-    id: `${now}-${Math.random().toString(36).slice(2, 8)}`,
+    // 同じコマンドの再コピーでは id を維持（コピー済表示が消えないように）
+    id: existing?.id ?? `${now}-${Math.random().toString(36).slice(2, 8)}`,
     command: trimmed,
-    label,
+    label: label ?? existing?.label,
     copiedAt: now,
   };
 

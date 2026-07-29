@@ -29,6 +29,10 @@ export type ToggleOption = {
   requiresRadio?: { group: string; id: string };
   /** 指定 radio が選択されているときは非表示 */
   excludeWhenRadio?: { group: string; id: string };
+  /** git とサブコマンドの間に挿入（例: git --no-pager diff） */
+  global?: boolean;
+  /** コマンドには付けず、他オプションの制御だけに使う */
+  controlOnly?: boolean;
 };
 
 export type RadioOption = {
@@ -39,6 +43,16 @@ export type RadioOption = {
   group: string;
   defaultSelected?: boolean;
   danger?: boolean;
+  /** 指定 radio が選択されているときだけ表示 */
+  requiresRadio?: { group: string; id: string };
+  /** 「入力する値」セクションに表示 */
+  inlineWithTexts?: boolean;
+  /** コマンドには付けず、他オプションの制御だけに使う */
+  controlOnly?: boolean;
+  /** inlineWithTexts 時のグループ見出し（先頭 option のみ） */
+  groupLabel?: string;
+  /** この text の直後にグループを挿入（先頭 option のみ） */
+  groupInsertAfter?: string;
 };
 
 export type TextOption = {
@@ -57,6 +71,14 @@ export type TextOption = {
   requiresRadio?: { group: string; id: string };
   /** 指定 radio が選択されているときは非表示 */
   excludeWhenRadio?: { group: string; id: string };
+  /** 別 text と結合して1引数にする（例: main..feature） */
+  combineWith?: {
+    id: string;
+    separator: string;
+    separatorRadio?: { group: string; threeDotId: string };
+    /** この text が空のとき partner に値があれば使う代替値 */
+    emptyFallback?: string;
+  };
 };
 
 export type CommandConfig = {
@@ -253,11 +275,64 @@ export const goals: Goal[] = [
     id: "diff",
     category: "workspace",
     title: "差分を見る",
-    description: "未ステージ / ステージ済みの変更を確認",
+    description: "未ステージ / ステージ済み / ブランチ間の変更を確認",
     emoji: "🔍",
     command: {
       base: "git diff",
+      radios: [
+        {
+          id: "worktree",
+          flag: "",
+          label: "作業ツリー",
+          description: "未コミット変更（デフォルト）",
+          group: "compare",
+          defaultSelected: true,
+        },
+        {
+          id: "branches",
+          flag: "",
+          label: "ブランチ比較",
+          description: "2つのブランチ・コミット間の差分",
+          group: "compare",
+        },
+        {
+          id: "two-dot",
+          flag: "",
+          label: "直接比較 (..)",
+          description: "main..feature",
+          group: "range-syntax",
+          groupLabel: "比較の書き方",
+          groupInsertAfter: "branch-to",
+          defaultSelected: true,
+          requiresRadio: { group: "compare", id: "branches" },
+          inlineWithTexts: true,
+          controlOnly: true,
+        },
+        {
+          id: "three-dot",
+          flag: "",
+          label: "共通祖先差分",
+          description: "共通祖先からの差分（main...feature）",
+          group: "range-syntax",
+          requiresRadio: { group: "compare", id: "branches" },
+          inlineWithTexts: true,
+          controlOnly: true,
+        },
+      ],
       toggles: [
+        {
+          id: "no-pager",
+          flag: "--no-pager",
+          label: "ページャ無効",
+          description: "ページャを使わず stdout に出力（スクリプト向け）",
+          global: true,
+        },
+        {
+          id: "no-color",
+          flag: "--no-color",
+          label: "色なし",
+          description: "ANSI カラー出力を無効化",
+        },
         {
           id: "staged",
           flag: "--staged",
@@ -279,10 +354,31 @@ export const goals: Goal[] = [
       ],
       texts: [
         {
+          id: "branch-from",
+          placeholder: "HEAD",
+          label: "比較元",
+          description: "差分の起点（省略時は HEAD）",
+          suffix: true,
+          requiresRadio: { group: "compare", id: "branches" },
+          combineWith: {
+            id: "branch-to",
+            separator: "..",
+            separatorRadio: { group: "range-syntax", threeDotId: "three-dot" },
+            emptyFallback: "HEAD",
+          },
+        },
+        {
+          id: "branch-to",
+          placeholder: "feature/auth",
+          label: "比較先",
+          description: "差分の終点",
+          requiresRadio: { group: "compare", id: "branches" },
+        },
+        {
           id: "target",
-          placeholder: "path/to/file",
+          placeholder: "-- path/to/file",
           label: "対象パス",
-          description: "特定ファイル・ディレクトリに絞る",
+          description: "特定ファイル・ディレクトリに絞る（ブランチ指定時は -- 推奨）",
           suffix: true,
         },
       ],
@@ -338,7 +434,7 @@ export const goals: Goal[] = [
         {
           id: "amend",
           flag: "--amend",
-          label: "amend",
+          label: "直前コミットを修正",
           description: "直前コミットに統合。push 済みなら force push が必要",
           danger: true,
         },
@@ -492,7 +588,7 @@ export const goals: Goal[] = [
         {
           id: "no-ff",
           flag: "--no-ff",
-          label: "no-ff",
+          label: "no-ff（マージコミット固定）",
           description: "マージコミットを必ず作る",
         },
       ],
@@ -519,7 +615,7 @@ export const goals: Goal[] = [
         {
           id: "interactive",
           flag: "-i",
-          label: "interactive",
+          label: "インタラクティブ編集",
           description: "コミットの squash / reword / drop を編集",
         },
       ],
@@ -533,7 +629,6 @@ export const goals: Goal[] = [
         },
       ],
     },
-    warning: "push 済みブランチの rebase は force push が必要",
   },
   {
     id: "cherry-pick",
@@ -574,7 +669,7 @@ export const goals: Goal[] = [
         {
           id: "force-with-lease",
           flag: "--force-with-lease",
-          label: "force-with-lease",
+          label: "force-with-lease（安全な強制）",
           description: "安全な force push",
           danger: true,
         },
@@ -597,8 +692,7 @@ export const goals: Goal[] = [
           id: "remote",
           placeholder: "origin",
           label: "リモート名",
-          description: "push 先リモート",
-          defaultValue: "origin",
+          description: "push 先リモート（省略時は origin）",
           suffix: true,
         },
         {
@@ -632,8 +726,7 @@ export const goals: Goal[] = [
           id: "remote",
           placeholder: "origin",
           label: "リモート名",
-          description: "pull 元リモート",
-          defaultValue: "origin",
+          description: "pull 元リモート（省略時は origin）",
           suffix: true,
         },
         {
@@ -664,7 +757,7 @@ export const goals: Goal[] = [
         {
           id: "prune",
           flag: "--prune",
-          label: "prune",
+          label: "削除参照整理",
           description: "削除済みリモートブランチの参照を整理",
         },
       ],
@@ -673,9 +766,9 @@ export const goals: Goal[] = [
           id: "remote",
           placeholder: "origin",
           label: "リモート名",
-          description: "fetch 元リモート",
-          defaultValue: "origin",
+          description: "fetch 元リモート（省略時は origin）",
           suffix: true,
+          excludeWhenToggles: ["all"],
         },
       ],
     },
@@ -801,8 +894,7 @@ export const goals: Goal[] = [
           id: "rev",
           placeholder: "HEAD",
           label: "コミット",
-          description: "hash、HEAD、ブランチ名など",
-          defaultValue: "HEAD",
+          description: "hash、HEAD、ブランチ名など（省略時は HEAD）",
           suffix: true,
         },
       ],
@@ -859,7 +951,7 @@ export const goals: Goal[] = [
         {
           id: "soft",
           flag: "--soft",
-          label: "soft",
+          label: "soft（コミットのみ取消）",
           description: "コミットだけ取り消し。変更はステージに残る",
           group: "mode",
           defaultSelected: true,
@@ -867,14 +959,14 @@ export const goals: Goal[] = [
         {
           id: "mixed",
           flag: "--mixed",
-          label: "mixed",
+          label: "mixed（ステージも取消）",
           description: "コミット + ステージ取り消し",
           group: "mode",
         },
         {
           id: "hard",
           flag: "--hard",
-          label: "hard",
+          label: "hard（破棄あり）",
           description: "コミット + ステージ + 作業ツリーを破棄",
           group: "mode",
           danger: true,

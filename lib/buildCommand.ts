@@ -122,25 +122,74 @@ function appendTextParts(
   }
 }
 
+function resolveCombineSeparator(
+  combineWith: NonNullable<
+    NonNullable<CommandConfig["texts"]>[number]["combineWith"]
+  >,
+  radios: Record<string, string>
+): string {
+  if (combineWith.separatorRadio) {
+    const { group, threeDotId } = combineWith.separatorRadio;
+    return radios[group] === threeDotId ? "..." : "..";
+  }
+  return combineWith.separator;
+}
+
+function appendTextOption(
+  parts: string[],
+  t: NonNullable<CommandConfig["texts"]>[number],
+  value: string,
+  state: OptionState
+): void {
+  if (t.combineWith) {
+    const partner = state.texts[t.combineWith.id]?.trim();
+    if (partner) {
+      const separator = resolveCombineSeparator(t.combineWith, state.radios);
+      parts.push(shellQuote(`${value}${separator}${partner}`));
+      return;
+    }
+  }
+  appendTextParts(parts, t, value);
+}
+
+function appendToggleFlag(
+  parts: string[],
+  flag: string
+): void {
+  if (flag.includes(" ")) {
+    parts.push(...flag.split(" "));
+  } else {
+    parts.push(flag);
+  }
+}
+
 export function buildCommand(
   config: CommandConfig,
   state: OptionState
 ): string {
   const toggles = resolveExclusiveToggles(config, state.toggles);
-  const parts: string[] = [config.base];
+  const baseParts = config.base.split(" ");
+  const parts: string[] = [baseParts[0] ?? config.base];
 
   config.toggles?.forEach((t) => {
+    if (!t.global) return;
+    if (t.controlOnly) return;
     if (!toggleApplies(t, toggles, state.radios)) return;
-    if (toggles[t.id]) {
-      if (t.flag.includes(" ")) {
-        parts.push(...t.flag.split(" "));
-      } else {
-        parts.push(t.flag);
-      }
-    }
+    if (toggles[t.id]) appendToggleFlag(parts, t.flag);
+  });
+
+  const rest = baseParts.slice(1).join(" ");
+  if (rest) parts.push(rest);
+
+  config.toggles?.forEach((t) => {
+    if (t.global) return;
+    if (t.controlOnly) return;
+    if (!toggleApplies(t, toggles, state.radios)) return;
+    if (toggles[t.id]) appendToggleFlag(parts, t.flag);
   });
 
   config.radios?.forEach((r) => {
+    if (r.controlOnly) return;
     if (state.radios[r.group] === r.id && r.flag) {
       parts.push(r.flag);
     }
@@ -149,58 +198,24 @@ export function buildCommand(
   config.texts?.forEach((t) => {
     if (!textApplies(t, toggles, state.radios)) return;
 
-    const value = state.texts[t.id]?.trim();
+    let value = state.texts[t.id]?.trim() ?? "";
+
+    if (!value && t.combineWith?.emptyFallback) {
+      const partner = state.texts[t.combineWith.id]?.trim();
+      if (partner) value = t.combineWith.emptyFallback;
+    }
+
     if (!value) return;
 
-    appendTextParts(parts, t, value);
+    const combinedBy = config.texts?.find((x) => x.combineWith?.id === t.id);
+    if (combinedBy) {
+      const partnerVal = state.texts[combinedBy.id]?.trim()
+        || combinedBy.combineWith?.emptyFallback;
+      if (partnerVal && value) return;
+    }
+
+    appendTextOption(parts, t, value, state);
   });
 
   return parts.join(" ");
-}
-
-export function getSelectedOptionDescriptions(
-  config: CommandConfig,
-  state: OptionState
-): { flag: string; label: string; description: string }[] {
-  const toggles = resolveExclusiveToggles(config, state.toggles);
-  const selected: { flag: string; label: string; description: string }[] = [];
-
-  config.toggles?.forEach((t) => {
-    if (!toggleApplies(t, toggles, state.radios)) return;
-    if (toggles[t.id]) {
-      selected.push({
-        flag: t.flag,
-        label: t.label,
-        description: t.description,
-      });
-    }
-  });
-
-  config.radios?.forEach((r) => {
-    if (state.radios[r.group] === r.id && r.flag) {
-      selected.push({
-        flag: r.flag,
-        label: r.label,
-        description: r.description,
-      });
-    }
-  });
-
-  config.texts?.forEach((t) => {
-    if (!textApplies(t, toggles, state.radios)) return;
-
-    const value = state.texts[t.id]?.trim();
-    if (!value) return;
-
-    const flag = t.flag
-      ? `${t.flag} ${shellQuote(value)}`
-      : value.trim().split(/\s+/).map(shellQuote).join(" ");
-    selected.push({
-      flag,
-      label: t.label,
-      description: t.description,
-    });
-  });
-
-  return selected;
 }

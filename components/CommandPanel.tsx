@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   buildCommand,
   createInitialState,
@@ -36,6 +36,21 @@ function shouldShowToggle(
   return true;
 }
 
+function shouldShowRadio(
+  goal: Goal,
+  radioId: string,
+  state: OptionState
+): boolean {
+  const radio = goal.command.radios?.find((r) => r.id === radioId);
+  if (!radio) return false;
+  if (
+    radio.requiresRadio &&
+    state.radios[radio.requiresRadio.group] !== radio.requiresRadio.id
+  )
+    return false;
+  return true;
+}
+
 function shouldShowText(
   goal: Goal,
   textId: string,
@@ -63,9 +78,24 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
     createInitialState(goal.command)
   );
 
+  const optionsAnchorRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     setState(createInitialState(goal.command));
   }, [goal]);
+
+  useEffect(() => {
+    const el = optionsAnchorRef.current;
+    if (!el) return;
+
+    // 追加オプション/入力欄が画面の外なら、アンカー位置へ自動スクロールする
+    const rect = el.getBoundingClientRect();
+    const nearTop = rect.top < 20;
+    const nearBottom = rect.top > window.innerHeight - 220;
+    if (nearTop || nearBottom) {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  }, [goal.id]);
 
   const command = useMemo(
     () => buildCommand(goal.command, state),
@@ -116,11 +146,89 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
   const visibleToggles = toggles?.filter((t) =>
     shouldShowToggle(goal, t.id, state)
   );
+  const visibleToggleCheckboxes = visibleToggles ?? [];
+  const modeRadios = radios?.filter(
+    (r) => !r.inlineWithTexts && shouldShowRadio(goal, r.id, state)
+  );
+  const inlineRadios = radios?.filter(
+    (r) => r.inlineWithTexts && shouldShowRadio(goal, r.id, state)
+  );
+  const inlineRadioGroups = [
+    ...new Set(inlineRadios?.map((r) => r.group) ?? []),
+  ];
   const visibleTexts = texts?.filter((t) => shouldShowText(goal, t.id, state));
+
+  const renderInlineRadioGroup = (group: string) => {
+    const options = inlineRadios?.filter((r) => r.group === group) ?? [];
+    const groupLabel = options.find((r) => r.groupLabel)?.groupLabel;
+    return (
+      <div key={group} className="space-y-2 sm:col-span-2">
+        {groupLabel && (
+          <p className="text-sm font-medium text-foreground">
+            {groupLabel}
+            <span className="ml-2 text-xs font-normal text-muted">
+              （どれか1つ）
+            </span>
+          </p>
+        )}
+        <div className="grid gap-2 sm:grid-cols-2">
+          {options.map((opt) => {
+            const isSelected = state.radios[opt.group] === opt.id;
+            return (
+              <label
+                key={opt.id}
+                className={`flex cursor-pointer gap-3 rounded-xl border p-3.5 transition ${
+                  isSelected
+                    ? "border-accent/50 bg-accent/10 ring-1 ring-accent/20"
+                    : "border-border bg-background hover:border-accent/30 hover:bg-surface/30"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name={`radio-${goal.id}-${opt.group}`}
+                  checked={isSelected}
+                  onChange={() => radioHandler(opt.group, opt.id)}
+                  className="sr-only"
+                />
+                <span
+                  className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                    isSelected
+                      ? "border-accent bg-accent"
+                      : "border-border bg-card"
+                  }`}
+                  aria-hidden
+                >
+                  {isSelected && (
+                    <span className="h-2 w-2 rounded-full bg-background" />
+                  )}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="flex flex-wrap items-center gap-2">
+                    <code className="rounded bg-card px-1.5 py-0.5 font-mono text-xs text-accent">
+                      {opt.id === "three-dot" ? "..." : ".."}
+                    </code>
+                    <span className="text-sm font-medium text-foreground">
+                      {opt.label}
+                    </span>
+                  </span>
+                  <span className="mt-1.5 block text-xs leading-relaxed text-muted">
+                    {opt.description}
+                  </span>
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
+  const insertedInlineGroups = new Set<string>();
 
   const hasOptions =
     (visibleToggles?.length ?? 0) > 0 ||
-    (radios?.length ?? 0) > 0 ||
+    (modeRadios?.length ?? 0) > 0 ||
+    (inlineRadios?.length ?? 0) > 0 ||
     (visibleTexts?.length ?? 0) > 0;
 
   return (
@@ -178,6 +286,8 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
           </div>
         )}
 
+        <div ref={optionsAnchorRef} className="scroll-mt-24" />
+
         {!hasOptions && (
           <div className="rounded-xl border border-success/25 bg-success/5 px-4 py-4 text-sm text-foreground">
             <p className="font-medium text-success">そのまま使えます</p>
@@ -195,74 +305,72 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
                 （任意 · {activeToggleCount}/{visibleToggles.length} 選択中）
               </span>
             </legend>
-            <div className="grid gap-2 sm:grid-cols-2">
-              {visibleToggles.map((opt) => {
-                const isOn = state.toggles[opt.id] ?? false;
-                return (
-                  <label
-                    key={opt.id}
-                    className={`flex cursor-pointer gap-3 rounded-xl border p-3.5 transition ${
-                      isOn
-                        ? opt.danger
-                          ? "border-danger/40 bg-danger/10 ring-1 ring-danger/20"
-                          : "border-accent/50 bg-accent/10 ring-1 ring-accent/20"
-                        : "border-border bg-background hover:border-accent/30 hover:bg-surface/30"
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isOn}
-                      onChange={() => toggleHandler(opt.id, opt.group)}
-                      className="sr-only"
-                    />
-                    <span
-                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs font-bold transition ${
+            {visibleToggleCheckboxes.length > 0 && (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {visibleToggleCheckboxes.map((opt) => {
+                  const isOn = state.toggles[opt.id] ?? false;
+                  return (
+                    <label
+                      key={opt.id}
+                      className={`flex cursor-pointer gap-3 rounded-xl border p-3.5 transition ${
                         isOn
                           ? opt.danger
-                            ? "border-danger bg-danger text-white"
-                            : "border-accent bg-accent text-background"
-                          : "border-border bg-card text-transparent"
+                            ? "border-danger/40 bg-danger/10 ring-1 ring-danger/20"
+                            : "border-accent/50 bg-accent/10 ring-1 ring-accent/20"
+                          : "border-border bg-background hover:border-accent/30 hover:bg-surface/30"
                       }`}
-                      aria-hidden
                     >
-                      ✓
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <code className="rounded bg-card px-1.5 py-0.5 font-mono text-xs text-accent">
-                          {opt.flag}
-                        </code>
-                        <span className="text-sm font-medium text-foreground">
-                          {opt.label}
+                      <input
+                        type="checkbox"
+                        checked={isOn}
+                        onChange={() => toggleHandler(opt.id, opt.group)}
+                        className="sr-only"
+                      />
+                      <span
+                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border text-xs font-bold transition ${
+                          isOn
+                            ? opt.danger
+                              ? "border-danger bg-danger text-white"
+                              : "border-accent bg-accent text-background"
+                            : "border-border bg-card text-transparent"
+                        }`}
+                        aria-hidden
+                      >
+                        ✓
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className="flex flex-wrap items-center gap-2">
+                          <code className="rounded bg-card px-1.5 py-0.5 font-mono text-xs text-accent">
+                            {opt.flag}
+                          </code>
+                          <span className="text-sm font-medium text-foreground">
+                            {opt.label}
+                          </span>
+                          {opt.group && (
+                            <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] text-muted">
+                              どれか1つ
+                            </span>
+                          )}
+                          {opt.danger && (
+                            <span className="rounded bg-danger/20 px-1.5 py-0.5 text-[10px] font-bold text-danger">
+                              注意
+                            </span>
+                          )}
                         </span>
-                        {opt.defaultSelected && (
-                          <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
-                            最初からオン
-                          </span>
-                        )}
-                        {opt.danger && (
-                          <span className="rounded bg-danger/20 px-1.5 py-0.5 text-[10px] font-bold text-danger">
-                            注意
-                          </span>
-                        )}
-                        {opt.group && (
-                          <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] text-muted">
-                            どれか1つ
-                          </span>
-                        )}
+                        <span className="mt-1.5 block text-xs leading-relaxed text-muted">
+                          {opt.description}
+                        </span>
                       </span>
-                      <span className="mt-1.5 block text-xs leading-relaxed text-muted">
-                        {opt.description}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+
           </fieldset>
         )}
 
-        {radios && radios.length > 0 && (
+        {modeRadios && modeRadios.length > 0 && (
           <fieldset className="space-y-3">
             <legend className="mb-1 text-sm font-semibold text-foreground">
               動作モード
@@ -271,7 +379,7 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
               </span>
             </legend>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {radios.map((opt) => {
+              {modeRadios.map((opt) => {
                 const isSelected = state.radios[opt.group] === opt.id;
                 return (
                   <label
@@ -313,11 +421,6 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
                         <span className="text-sm font-medium text-foreground">
                           {opt.label}
                         </span>
-                        {opt.defaultSelected && (
-                          <span className="rounded bg-accent/15 px-1.5 py-0.5 text-[10px] font-medium text-accent">
-                            おすすめ
-                          </span>
-                        )}
                         {opt.danger && (
                           <span className="rounded bg-danger/20 px-1.5 py-0.5 text-[10px] font-bold text-danger">
                             注意
@@ -335,18 +438,18 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
           </fieldset>
         )}
 
-        {visibleTexts && visibleTexts.length > 0 && (
+        {(visibleTexts?.length ?? 0) > 0 || inlineRadioGroups.length > 0 ? (
           <fieldset className="space-y-3">
             <legend className="mb-1 text-sm font-semibold text-foreground">
               入力する値
               <span className="ml-2 text-xs font-normal text-muted">
-                （必要に応じて）
+                （任意）
               </span>
             </legend>
             <div className="grid gap-3 sm:grid-cols-2">
-              {visibleTexts.map((opt) => {
+              {visibleTexts?.flatMap((opt) => {
                 const hasValue = (state.texts[opt.id] ?? "").trim().length > 0;
-                return (
+                const items = [
                   <div
                     key={opt.id}
                     className={`rounded-xl border p-3.5 transition ${
@@ -382,12 +485,28 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
                     <p className="mt-2 text-xs leading-relaxed text-muted">
                       {opt.description}
                     </p>
-                  </div>
-                );
+                  </div>,
+                ];
+
+                inlineRadioGroups.forEach((group) => {
+                  const anchor = inlineRadios?.find((r) => r.group === group);
+                  if (
+                    anchor?.groupInsertAfter === opt.id &&
+                    !insertedInlineGroups.has(group)
+                  ) {
+                    insertedInlineGroups.add(group);
+                    items.push(renderInlineRadioGroup(group));
+                  }
+                });
+
+                return items;
               })}
+              {inlineRadioGroups
+                .filter((group) => !insertedInlineGroups.has(group))
+                .map((group) => renderInlineRadioGroup(group))}
             </div>
           </fieldset>
-        )}
+        ) : null}
 
       </div>
     </section>
