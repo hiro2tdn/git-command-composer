@@ -1,15 +1,22 @@
-import type { CommandConfig } from "./goals";
+import type { CommandConfig, PathspecOption } from "./goals";
+
+export type PathspecValue = {
+  includes: string[];
+  excludes: string[];
+};
 
 export type OptionState = {
   toggles: Record<string, boolean>;
   radios: Record<string, string>;
   texts: Record<string, string>;
+  pathspecs: Record<string, PathspecValue>;
 };
 
 export function createInitialState(config: CommandConfig): OptionState {
   const toggles: Record<string, boolean> = {};
   const radios: Record<string, string> = {};
   const texts: Record<string, string> = {};
+  const pathspecs: Record<string, PathspecValue> = {};
 
   config.toggles?.forEach((t) => {
     toggles[t.id] = t.defaultSelected ?? false;
@@ -36,7 +43,11 @@ export function createInitialState(config: CommandConfig): OptionState {
     texts[t.id] = t.defaultValue ?? "";
   });
 
-  return { toggles, radios, texts };
+  config.pathspecs?.forEach((p) => {
+    pathspecs[p.id] = { includes: [], excludes: [] };
+  });
+
+  return { toggles, radios, texts, pathspecs };
 }
 
 function resolveExclusiveToggles(
@@ -152,6 +163,38 @@ function appendTextOption(
   appendTextParts(parts, t, value);
 }
 
+function pathspecApplies(
+  p: PathspecOption,
+  radios: Record<string, string>
+): boolean {
+  if (p.requiresRadio && radios[p.requiresRadio.group] !== p.requiresRadio.id)
+    return false;
+  if (
+    p.excludeWhenRadio &&
+    radios[p.excludeWhenRadio.group] === p.excludeWhenRadio.id
+  )
+    return false;
+  return true;
+}
+
+/** Build `-- include... :(exclude)x` pathspec args. */
+export function buildPathspecArgs(value: PathspecValue): string[] {
+  const includes = value.includes.map((s) => s.trim()).filter(Boolean);
+  const excludes = value.excludes.map((s) => s.trim()).filter(Boolean);
+  if (includes.length === 0 && excludes.length === 0) return [];
+
+  const parts: string[] = ["--"];
+  if (includes.length === 0) {
+    parts.push(".");
+  } else {
+    parts.push(...includes.map(shellQuote));
+  }
+  excludes.forEach((path) => {
+    parts.push(shellQuote(`:(exclude)${path}`));
+  });
+  return parts;
+}
+
 function appendToggleFlag(
   parts: string[],
   flag: string
@@ -215,6 +258,13 @@ export function buildCommand(
     }
 
     appendTextOption(parts, t, value, state);
+  });
+
+  config.pathspecs?.forEach((p) => {
+    if (!pathspecApplies(p, state.radios)) return;
+    const value = state.pathspecs[p.id];
+    if (!value) return;
+    parts.push(...buildPathspecArgs(value));
   });
 
   return parts.join(" ");

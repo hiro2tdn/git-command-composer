@@ -5,9 +5,11 @@ import {
   buildCommand,
   createInitialState,
   type OptionState,
+  type PathspecValue,
 } from "@/lib/buildCommand";
 import type { Goal } from "@/lib/goals";
 import { CopyButton } from "./CopyButton";
+import { PathspecBuilder } from "./PathspecBuilder";
 
 type CommandPanelProps = {
   goal: Goal;
@@ -68,6 +70,27 @@ function shouldShowText(
   if (
     text.excludeWhenRadio &&
     state.radios[text.excludeWhenRadio.group] === text.excludeWhenRadio.id
+  )
+    return false;
+  return true;
+}
+
+function shouldShowPathspec(
+  goal: Goal,
+  pathspecId: string,
+  state: OptionState
+): boolean {
+  const pathspec = goal.command.pathspecs?.find((p) => p.id === pathspecId);
+  if (!pathspec) return false;
+  if (
+    pathspec.requiresRadio &&
+    state.radios[pathspec.requiresRadio.group] !== pathspec.requiresRadio.id
+  )
+    return false;
+  if (
+    pathspec.excludeWhenRadio &&
+    state.radios[pathspec.excludeWhenRadio.group] ===
+      pathspec.excludeWhenRadio.id
   )
     return false;
   return true;
@@ -142,7 +165,14 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
     }));
   };
 
-  const { toggles, radios, texts } = goal.command;
+  const pathspecHandler = (id: string, value: PathspecValue) => {
+    setState((prev) => ({
+      ...prev,
+      pathspecs: { ...prev.pathspecs, [id]: value },
+    }));
+  };
+
+  const { toggles, radios, texts, pathspecs } = goal.command;
   const visibleToggles = toggles?.filter((t) =>
     shouldShowToggle(goal, t.id, state)
   );
@@ -157,6 +187,9 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
     ...new Set(inlineRadios?.map((r) => r.group) ?? []),
   ];
   const visibleTexts = texts?.filter((t) => shouldShowText(goal, t.id, state));
+  const visiblePathspecs = pathspecs?.filter((p) =>
+    shouldShowPathspec(goal, p.id, state)
+  );
 
   const renderInlineRadioGroup = (group: string) => {
     const options = inlineRadios?.filter((r) => r.group === group) ?? [];
@@ -229,7 +262,8 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
     (visibleToggles?.length ?? 0) > 0 ||
     (modeRadios?.length ?? 0) > 0 ||
     (inlineRadios?.length ?? 0) > 0 ||
-    (visibleTexts?.length ?? 0) > 0;
+    (visibleTexts?.length ?? 0) > 0 ||
+    (visiblePathspecs?.length ?? 0) > 0;
 
   return (
     <section
@@ -438,7 +472,9 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
           </fieldset>
         )}
 
-        {(visibleTexts?.length ?? 0) > 0 || inlineRadioGroups.length > 0 ? (
+        {(visibleTexts?.length ?? 0) > 0 ||
+        inlineRadioGroups.length > 0 ||
+        (visiblePathspecs?.length ?? 0) > 0 ? (
           <fieldset className="space-y-3">
             <legend className="mb-1 text-sm font-semibold text-foreground">
               入力する値
@@ -504,6 +540,18 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
               {inlineRadioGroups
                 .filter((group) => !insertedInlineGroups.has(group))
                 .map((group) => renderInlineRadioGroup(group))}
+              {visiblePathspecs?.map((opt) => (
+                <PathspecBuilder
+                  key={opt.id}
+                  label={opt.label}
+                  description={opt.description}
+                  value={
+                    state.pathspecs[opt.id] ?? { includes: [], excludes: [] }
+                  }
+                  excludeSuggestions={opt.excludeSuggestions}
+                  onChange={(value) => pathspecHandler(opt.id, value)}
+                />
+              ))}
             </div>
           </fieldset>
         ) : null}

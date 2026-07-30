@@ -81,11 +81,23 @@ export type TextOption = {
   };
 };
 
+/** 含める / 除外する pathspec を GUI で組み立てる */
+export type PathspecOption = {
+  id: string;
+  label: string;
+  description: string;
+  /** 除外のクイック追加候補 */
+  excludeSuggestions?: string[];
+  requiresRadio?: { group: string; id: string };
+  excludeWhenRadio?: { group: string; id: string };
+};
+
 export type CommandConfig = {
   base: string;
   toggles?: ToggleOption[];
   radios?: RadioOption[];
   texts?: TextOption[];
+  pathspecs?: PathspecOption[];
 };
 
 export type RelatedCommand = {
@@ -303,7 +315,6 @@ export const goals: Goal[] = [
           group: "range-syntax",
           groupLabel: "比較の書き方",
           groupInsertAfter: "branch-to",
-          defaultSelected: true,
           requiresRadio: { group: "compare", id: "branches" },
           inlineWithTexts: true,
           controlOnly: true,
@@ -314,6 +325,7 @@ export const goals: Goal[] = [
           label: "共通祖先差分",
           description: "共通祖先からの差分（main...feature）",
           group: "range-syntax",
+          defaultSelected: true,
           requiresRadio: { group: "compare", id: "branches" },
           inlineWithTexts: true,
           controlOnly: true,
@@ -374,12 +386,17 @@ export const goals: Goal[] = [
           description: "差分の終点",
           requiresRadio: { group: "compare", id: "branches" },
         },
+      ],
+      pathspecs: [
         {
-          id: "target",
-          placeholder: "-- path/to/file",
+          id: "paths",
           label: "対象パス",
-          description: "特定ファイル・ディレクトリに絞る（ブランチ指定時は -- 推奨）",
-          suffix: true,
+          description: "含めるパスと除外するパスを指定",
+          excludeSuggestions: [
+            "package-lock.json",
+            "yarn.lock",
+            "pnpm-lock.yaml",
+          ],
         },
       ],
     },
