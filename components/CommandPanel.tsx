@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   buildCommand,
   createInitialState,
@@ -101,24 +101,9 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
     createInitialState(goal.command)
   );
 
-  const optionsAnchorRef = useRef<HTMLDivElement | null>(null);
-
   useEffect(() => {
     setState(createInitialState(goal.command));
   }, [goal]);
-
-  useEffect(() => {
-    const el = optionsAnchorRef.current;
-    if (!el) return;
-
-    // 追加オプション/入力欄が画面の外なら、アンカー位置へ自動スクロールする
-    const rect = el.getBoundingClientRect();
-    const nearTop = rect.top < 20;
-    const nearBottom = rect.top > window.innerHeight - 220;
-    if (nearTop || nearBottom) {
-      el.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-  }, [goal.id]);
 
   const command = useMemo(
     () => buildCommand(goal.command, state),
@@ -319,8 +304,6 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
             ⚠️ {goal.warning}
           </div>
         )}
-
-        <div ref={optionsAnchorRef} className="scroll-mt-24" />
 
         {!hasOptions && (
           <div className="rounded-xl border border-success/25 bg-success/5 px-4 py-4 text-sm text-foreground">
