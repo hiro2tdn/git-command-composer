@@ -13,7 +13,7 @@ export default function Home() {
               Git Command Composer
             </h1>
             <p className="text-xs text-muted">
-              コマンドを選んでオプションを調整
+              Git の操作とオプションを選んで、コマンドを組み立てます
             </p>
           </div>
         </div>

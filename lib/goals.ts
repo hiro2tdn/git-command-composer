@@ -1,11 +1,11 @@
 export type CategoryId =
   | "setup"
-  | "workspace"
   | "commit"
   | "branch"
   | "remote"
-  | "history"
-  | "recovery";
+  | "recovery"
+  | "workspace"
+  | "history";
 
 export type Category = {
   id: CategoryId;
@@ -123,19 +123,13 @@ export const categories: Category[] = [
     id: "setup",
     label: "新規・セットアップ",
     emoji: "🚀",
-    description: "init / clone / remote 設定",
-  },
-  {
-    id: "workspace",
-    label: "ワークツリー",
-    emoji: "📂",
-    description: "変更の確認・ステージング",
+    description: "init / clone",
   },
   {
     id: "commit",
-    label: "コミット",
+    label: "ステージ・コミット",
     emoji: "📝",
-    description: "記録・修正",
+    description: "add / commit",
   },
   {
     id: "branch",
@@ -147,19 +141,25 @@ export const categories: Category[] = [
     id: "remote",
     label: "リモート",
     emoji: "☁️",
-    description: "push / pull / fetch",
-  },
-  {
-    id: "history",
-    label: "履歴調査",
-    emoji: "🔎",
-    description: "log / show",
+    description: "remote / push / pull / fetch",
   },
   {
     id: "recovery",
     label: "修復",
     emoji: "🛠️",
     description: "restore / reset / revert / stash",
+  },
+  {
+    id: "workspace",
+    label: "変更確認",
+    emoji: "📂",
+    description: "status / diff",
+  },
+  {
+    id: "history",
+    label: "履歴調査",
+    emoji: "🔎",
+    description: "log / show",
   },
 ];
 
@@ -217,193 +217,11 @@ export const goals: Goal[] = [
       ],
     },
   },
-  {
-    id: "remote-add",
-    category: "setup",
-    title: "リモートリポジトリを登録する",
-    description: "GitHub 等の URL を origin として追加",
-    emoji: "🔗",
-    command: {
-      base: "git remote add",
-      texts: [
-        {
-          id: "name",
-          placeholder: "origin",
-          label: "リモート名",
-          description: "通常は origin",
-          defaultValue: "origin",
-          suffix: true,
-        },
-        {
-          id: "url",
-          placeholder: "https://github.com/user/repo.git",
-          label: "URL",
-          description: "リモートリポジトリの URL",
-          suffix: true,
-        },
-      ],
-    },
-  },
-  {
-    id: "remote-list",
-    category: "setup",
-    title: "リモート一覧を表示する",
-    description: "登録済みリモートと URL を確認",
-    emoji: "📋",
-    command: {
-      base: "git remote",
-      toggles: [
-        {
-          id: "verbose",
-          flag: "-v",
-          label: "URL も表示",
-          description: "`git remote -v` と同じ",
-          defaultSelected: true,
-        },
-      ],
-    },
-  },
 
-  // --- workspace ---
-  {
-    id: "status",
-    category: "workspace",
-    title: "作業ツリーの状態を確認する",
-    description: "未ステージ・ステージ済み・未追跡ファイルを把握する",
-    emoji: "📊",
-    command: {
-      base: "git status",
-      toggles: [
-        {
-          id: "short",
-          flag: "-sb",
-          label: "短い形式",
-          description: "ブランチ名付きコンパクト表示",
-        },
-      ],
-    },
-  },
-  {
-    id: "diff",
-    category: "workspace",
-    title: "差分を見る",
-    description: "未ステージ / ステージ済み / ブランチ間の変更を確認",
-    emoji: "🔍",
-    command: {
-      base: "git diff",
-      radios: [
-        {
-          id: "worktree",
-          flag: "",
-          label: "作業ツリー",
-          description: "未コミット変更（デフォルト）",
-          group: "compare",
-          defaultSelected: true,
-        },
-        {
-          id: "branches",
-          flag: "",
-          label: "ブランチ比較",
-          description: "2つのブランチ・コミット間の差分",
-          group: "compare",
-        },
-        {
-          id: "two-dot",
-          flag: "",
-          label: "直接比較 (..)",
-          description: "main..feature",
-          group: "range-syntax",
-          groupLabel: "比較の書き方",
-          groupInsertAfter: "branch-to",
-          requiresRadio: { group: "compare", id: "branches" },
-          inlineWithTexts: true,
-          controlOnly: true,
-        },
-        {
-          id: "three-dot",
-          flag: "",
-          label: "共通祖先差分",
-          description: "共通祖先からの差分（main...feature）",
-          group: "range-syntax",
-          defaultSelected: true,
-          requiresRadio: { group: "compare", id: "branches" },
-          inlineWithTexts: true,
-          controlOnly: true,
-        },
-      ],
-      toggles: [
-        {
-          id: "no-pager",
-          flag: "--no-pager",
-          label: "ページャ無効",
-          description: "ページャを使わず stdout に出力（スクリプト向け）",
-          global: true,
-        },
-        {
-          id: "no-color",
-          flag: "--no-color",
-          label: "色なし",
-          description: "ANSI カラー出力を無効化",
-        },
-        {
-          id: "staged",
-          flag: "--staged",
-          label: "ステージ済み",
-          description: "次のコミットに入る変更だけ",
-        },
-        {
-          id: "stat",
-          flag: "--stat",
-          label: "統計のみ",
-          description: "ファイルごとの追加/削除行数",
-        },
-        {
-          id: "name-only",
-          flag: "--name-only",
-          label: "ファイル名のみ",
-          description: "変更されたファイルパスだけ",
-        },
-      ],
-      texts: [
-        {
-          id: "branch-from",
-          placeholder: "HEAD",
-          label: "比較元",
-          description: "差分の起点（省略時は HEAD）",
-          suffix: true,
-          requiresRadio: { group: "compare", id: "branches" },
-          combineWith: {
-            id: "branch-to",
-            separator: "..",
-            separatorRadio: { group: "range-syntax", threeDotId: "three-dot" },
-            emptyFallback: "HEAD",
-          },
-        },
-        {
-          id: "branch-to",
-          placeholder: "feature/auth",
-          label: "比較先",
-          description: "差分の終点",
-          requiresRadio: { group: "compare", id: "branches" },
-        },
-      ],
-      pathspecs: [
-        {
-          id: "paths",
-          label: "対象パス",
-          description: "含めるパスと除外するパスを指定",
-          excludeSuggestions: [
-            "package-lock.json",
-            "yarn.lock",
-            "pnpm-lock.yaml",
-          ],
-        },
-      ],
-    },
-  },
+  // --- commit ---
   {
     id: "add",
-    category: "workspace",
+    category: "commit",
     title: "変更をステージングする",
     description: "コミット対象を Index に載せる",
     emoji: "➕",
@@ -437,8 +255,6 @@ export const goals: Goal[] = [
       ],
     },
   },
-
-  // --- commit ---
   {
     id: "commit",
     category: "commit",
@@ -669,6 +485,62 @@ export const goals: Goal[] = [
 
   // --- remote ---
   {
+    id: "remote",
+    category: "remote",
+    title: "リモートを管理する",
+    description: "一覧表示・origin 等の登録",
+    emoji: "🔗",
+    command: {
+      base: "git remote",
+      radios: [
+        {
+          id: "list",
+          flag: "",
+          label: "一覧",
+          description: "登録済みリモートを表示",
+          group: "action",
+          defaultSelected: true,
+        },
+        {
+          id: "add",
+          flag: "add",
+          label: "追加",
+          description: "新しいリモートを登録",
+          group: "action",
+        },
+      ],
+      toggles: [
+        {
+          id: "verbose",
+          flag: "-v",
+          label: "URL も表示",
+          description: "`git remote -v` と同じ",
+          defaultSelected: true,
+          requiresRadio: { group: "action", id: "list" },
+        },
+      ],
+      texts: [
+        {
+          id: "name",
+          placeholder: "origin",
+          label: "リモート名",
+          description: "通常は origin",
+          defaultValue: "origin",
+          suffix: true,
+          requiresRadio: { group: "action", id: "add" },
+        },
+        {
+          id: "url",
+          placeholder: "https://github.com/user/repo.git",
+          label: "URL",
+          description: "リモートリポジトリの URL",
+          suffix: true,
+          requiresRadio: { group: "action", id: "add" },
+        },
+      ],
+    },
+  },
+  {
     id: "push",
     category: "remote",
     title: "リモートに push する",
@@ -843,81 +715,6 @@ export const goals: Goal[] = [
     },
   },
 
-  // --- history ---
-  {
-    id: "log",
-    category: "history",
-    title: "コミット履歴を見る",
-    description: "ブランチのコミット履歴を確認",
-    emoji: "📜",
-    command: {
-      base: "git log",
-      toggles: [
-        {
-          id: "oneline",
-          flag: "--oneline",
-          label: "1行表示",
-          description: "ハッシュ + メッセージを1行ずつ",
-        },
-        {
-          id: "graph",
-          flag: "--graph",
-          label: "グラフ",
-          description: "ブランチ分岐を可視化",
-        },
-        {
-          id: "all",
-          flag: "--all",
-          label: "全ブランチ",
-          description: "すべてのブランチを表示",
-        },
-      ],
-      texts: [
-        {
-          id: "count",
-          flag: "-n",
-          placeholder: "20",
-          label: "件数制限",
-          description: "直近 N 件だけ",
-        },
-        {
-          id: "path",
-          placeholder: "-- src/app.ts",
-          label: "パス指定",
-          description: "特定ファイルの履歴だけ見る",
-          suffix: true,
-        },
-      ],
-    },
-  },
-  {
-    id: "show",
-    category: "history",
-    title: "特定コミットの中身を見る",
-    description: "1コミット分の diff",
-    emoji: "🔬",
-    command: {
-      base: "git show",
-      toggles: [
-        {
-          id: "stat",
-          flag: "--stat",
-          label: "stat のみ",
-          description: "diff なしでファイル統計だけ",
-        },
-      ],
-      texts: [
-        {
-          id: "rev",
-          placeholder: "HEAD",
-          label: "コミット",
-          description: "hash、HEAD、ブランチ名など（省略時は HEAD）",
-          suffix: true,
-        },
-      ],
-    },
-  },
-
   // --- recovery ---
   {
     id: "restore",
@@ -932,7 +729,7 @@ export const goals: Goal[] = [
           id: "worktree",
           flag: "",
           label: "作業ツリーを破棄",
-          description: "編集内容を HEAD の状態に戻す",
+          description: "編集内容を復元元の状態に戻す",
           group: "target",
           defaultSelected: true,
         },
@@ -940,11 +737,18 @@ export const goals: Goal[] = [
           id: "staged",
           flag: "--staged",
           label: "ステージ解除",
-          description: "Index から外す（編集内容は残る）",
+          description: "Index を復元元に合わせる（作業ツリーは残る）",
           group: "target",
         },
       ],
       texts: [
+        {
+          id: "source",
+          flag: "--source",
+          placeholder: "HEAD~1",
+          label: "リストア元",
+          description: "hash、HEAD~1、ブランチ名など（省略可）",
+        },
         {
           id: "paths",
           placeholder: "src/app.ts",
@@ -999,7 +803,8 @@ export const goals: Goal[] = [
         },
       ],
     },
-    warning: "push 済み履歴への reset は force push が必要。revert を優先",
+    warning:
+      "push 済みコミットを消すと force push が必要。共有ブランチでは revert を使ってください",
   },
   {
     id: "revert",
@@ -1092,6 +897,219 @@ export const goals: Goal[] = [
           description: "省略時は最新",
           suffix: true,
           requiresRadio: { group: "subcmd", id: "apply" },
+        },
+      ],
+    },
+  },
+
+  // --- workspace ---
+  {
+    id: "status",
+    category: "workspace",
+    title: "作業ツリーの状態を確認する",
+    description: "未ステージ・ステージ済み・未追跡ファイルを把握する",
+    emoji: "📊",
+    command: {
+      base: "git status",
+      toggles: [
+        {
+          id: "short",
+          flag: "-sb",
+          label: "短い形式",
+          description: "ブランチ名付きコンパクト表示",
+        },
+      ],
+    },
+  },
+  {
+    id: "diff",
+    category: "workspace",
+    title: "差分を見る",
+    description: "未ステージ / ステージ済み / ブランチ間の変更を確認",
+    emoji: "🔍",
+    command: {
+      base: "git diff",
+      radios: [
+        {
+          id: "worktree",
+          flag: "",
+          label: "作業ツリー",
+          description: "未コミット変更（デフォルト）",
+          group: "compare",
+          defaultSelected: true,
+        },
+        {
+          id: "branches",
+          flag: "",
+          label: "ブランチ比較",
+          description: "2つのブランチ・コミット間の差分",
+          group: "compare",
+        },
+        {
+          id: "two-dot",
+          flag: "",
+          label: "直接比較 (..)",
+          description: "main..feature",
+          group: "range-syntax",
+          groupLabel: "比較の書き方",
+          groupInsertAfter: "branch-to",
+          requiresRadio: { group: "compare", id: "branches" },
+          inlineWithTexts: true,
+          controlOnly: true,
+        },
+        {
+          id: "three-dot",
+          flag: "",
+          label: "共通祖先差分",
+          description: "共通祖先からの差分（main...feature）",
+          group: "range-syntax",
+          defaultSelected: true,
+          requiresRadio: { group: "compare", id: "branches" },
+          inlineWithTexts: true,
+          controlOnly: true,
+        },
+      ],
+      toggles: [
+        {
+          id: "no-pager",
+          flag: "--no-pager",
+          label: "ページャ無効",
+          description: "ページャを使わず stdout に出力（スクリプト向け）",
+          global: true,
+        },
+        {
+          id: "no-color",
+          flag: "--no-color",
+          label: "色なし",
+          description: "ANSI カラー出力を無効化",
+        },
+        {
+          id: "staged",
+          flag: "--staged",
+          label: "ステージ済み",
+          description: "次のコミットに入る変更だけ",
+        },
+        {
+          id: "stat",
+          flag: "--stat",
+          label: "統計のみ",
+          description: "ファイルごとの追加/削除行数",
+        },
+        {
+          id: "name-only",
+          flag: "--name-only",
+          label: "ファイル名のみ",
+          description: "変更されたファイルパスだけ",
+        },
+      ],
+      texts: [
+        {
+          id: "branch-from",
+          placeholder: "HEAD",
+          label: "比較元",
+          description: "差分の起点（省略時は HEAD）",
+          suffix: true,
+          requiresRadio: { group: "compare", id: "branches" },
+          combineWith: {
+            id: "branch-to",
+            separator: "..",
+            separatorRadio: { group: "range-syntax", threeDotId: "three-dot" },
+            emptyFallback: "HEAD",
+          },
+        },
+        {
+          id: "branch-to",
+          placeholder: "feature/auth",
+          label: "比較先",
+          description: "差分の終点",
+          requiresRadio: { group: "compare", id: "branches" },
+        },
+      ],
+      pathspecs: [
+        {
+          id: "paths",
+          label: "対象パス",
+          description: "含めるパスと除外するパスを指定",
+          excludeSuggestions: [
+            "package-lock.json",
+            "yarn.lock",
+            "pnpm-lock.yaml",
+          ],
+        },
+      ],
+    },
+  },
+
+  // --- history ---
+  {
+    id: "log",
+    category: "history",
+    title: "コミット履歴を見る",
+    description: "ブランチのコミット履歴を確認",
+    emoji: "📜",
+    command: {
+      base: "git log",
+      toggles: [
+        {
+          id: "oneline",
+          flag: "--oneline",
+          label: "1行表示",
+          description: "ハッシュ + メッセージを1行ずつ",
+        },
+        {
+          id: "graph",
+          flag: "--graph",
+          label: "グラフ",
+          description: "ブランチ分岐を可視化",
+        },
+        {
+          id: "all",
+          flag: "--all",
+          label: "全ブランチ",
+          description: "すべてのブランチを表示",
+        },
+      ],
+      texts: [
+        {
+          id: "count",
+          flag: "-n",
+          placeholder: "20",
+          label: "件数制限",
+          description: "直近 N 件だけ",
+        },
+        {
+          id: "path",
+          placeholder: "-- src/app.ts",
+          label: "パス指定",
+          description: "特定ファイルの履歴だけ見る",
+          suffix: true,
+        },
+      ],
+    },
+  },
+  {
+    id: "show",
+    category: "history",
+    title: "特定コミットの中身を見る",
+    description: "1コミット分の diff",
+    emoji: "🔬",
+    command: {
+      base: "git show",
+      toggles: [
+        {
+          id: "stat",
+          flag: "--stat",
+          label: "stat のみ",
+          description: "diff なしでファイル統計だけ",
+        },
+      ],
+      texts: [
+        {
+          id: "rev",
+          placeholder: "HEAD",
+          label: "コミット",
+          description: "hash、HEAD、ブランチ名など（省略時は HEAD）",
+          suffix: true,
         },
       ],
     },

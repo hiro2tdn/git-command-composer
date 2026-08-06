@@ -14,7 +14,7 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   title: "Git Command Composer",
-  description: "やりたい操作を選び、オプション付きで Git コマンドを組み立てる",
+  description: "Git の操作とオプションを選んで、コマンドを組み立てます",
 };
 
 export default function RootLayout({

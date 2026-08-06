@@ -18,25 +18,9 @@ export function GoalPicker() {
         />
       </aside>
 
-      <section aria-labelledby="command-heading" className="min-w-0">
+      <section className="min-w-0">
         {selectedGoal ? (
-          <>
-            <div className="mb-4">
-              <h2
-                id="command-heading"
-                className="text-base font-semibold text-foreground"
-              >
-                オプションを調整
-              </h2>
-              <p className="mt-1 text-sm text-muted">
-                {selectedGoal.title} — 必要なオプションだけオンにします
-              </p>
-            </div>
-            <CommandPanel
-              goal={selectedGoal}
-              onClose={() => setSelectedGoal(null)}
-            />
-          </>
+          <CommandPanel goal={selectedGoal} />
         ) : (
           <div className="rounded-xl border border-dashed border-border bg-card/30 px-6 py-16 text-center">
             <p className="font-mono text-sm text-accent">git …</p>

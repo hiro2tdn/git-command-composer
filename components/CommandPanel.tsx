@@ -13,7 +13,6 @@ import { PathspecBuilder } from "./PathspecBuilder";
 
 type CommandPanelProps = {
   goal: Goal;
-  onClose: () => void;
 };
 
 function shouldShowToggle(
@@ -96,7 +95,7 @@ function shouldShowPathspec(
   return true;
 }
 
-export function CommandPanel({ goal, onClose }: CommandPanelProps) {
+export function CommandPanel({ goal }: CommandPanelProps) {
   const [state, setState] = useState<OptionState>(() =>
     createInitialState(goal.command)
   );
@@ -256,26 +255,21 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
       aria-live="polite"
     >
       <div className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur-sm">
-        <div className="flex items-start justify-between gap-4 p-6 pb-4">
-          <div>
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-2xl" aria-hidden>
-                {goal.emoji}
-              </span>
-              <h2 className="text-xl font-bold text-foreground">
-                {goal.title}
-              </h2>
-            </div>
-            <p className="text-sm text-muted">{goal.description}</p>
+        <div className="p-6 pb-4">
+          <div className="mb-2 flex items-center gap-2">
+            <span className="text-2xl" aria-hidden>
+              {goal.emoji}
+            </span>
+            <h2 className="text-xl font-bold text-foreground">
+              {goal.title}
+            </h2>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="操作の選択を解除"
-            className="shrink-0 rounded-lg border border-border px-3 py-1.5 text-sm text-muted transition hover:border-accent/30 hover:text-foreground"
-          >
-            ✕
-          </button>
+          <p className="text-sm text-muted">{goal.description}</p>
+          {goal.warning && (
+            <p className="mt-1.5 text-sm text-danger" role="note">
+              {goal.warning}
+            </p>
+          )}
         </div>
 
         <div className="border-t border-border/60 bg-background/80 px-6 py-4">
@@ -296,15 +290,6 @@ export function CommandPanel({ goal, onClose }: CommandPanelProps) {
       </div>
 
       <div className="space-y-6 p-6">
-        {goal.warning && (
-          <div
-            role="alert"
-            className="rounded-xl border border-danger/30 bg-danger/10 px-4 py-3 text-sm text-danger"
-          >
-            ⚠️ {goal.warning}
-          </div>
-        )}
-
         {!hasOptions && (
           <div className="rounded-xl border border-success/25 bg-success/5 px-4 py-4 text-sm text-foreground">
             <p className="font-medium text-success">そのまま使えます</p>

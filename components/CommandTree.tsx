@@ -51,7 +51,6 @@ export function CommandTree({
     >
       <div className="shrink-0 border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold text-foreground">コマンド一覧</h2>
-        <p className="mt-0.5 text-xs text-muted">カテゴリを開いて選択</p>
       </div>
 
       <ul className="tree-scroll min-h-0 flex-1 overflow-y-auto overscroll-y-contain py-1">
