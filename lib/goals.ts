@@ -169,7 +169,7 @@ export const goals: Goal[] = [
     id: "init",
     category: "setup",
     title: "新しいリポジトリを初期化する",
-    description: "空のディレクトリを Git 管理下に置く",
+    description: "カレントディレクトリを Git リポジトリにする",
     emoji: "📁",
     command: {
       base: "git init",
@@ -188,7 +188,7 @@ export const goals: Goal[] = [
     id: "clone",
     category: "setup",
     title: "リポジトリをクローンする",
-    description: "リモートリポジトリをローカルに複製する",
+    description: "リモートのリポジトリをローカルへ複製する",
     emoji: "📥",
     command: {
       base: "git clone",
@@ -223,7 +223,7 @@ export const goals: Goal[] = [
     id: "add",
     category: "commit",
     title: "変更をステージングする",
-    description: "コミット対象を Index に載せる",
+    description: "変更を Index（ステージ）に載せる",
     emoji: "➕",
     command: {
       base: "git add",
@@ -259,7 +259,7 @@ export const goals: Goal[] = [
     id: "commit",
     category: "commit",
     title: "コミットを作成する",
-    description: "ステージ済み変更を履歴に記録する",
+    description: "ステージ済みの変更を履歴に記録する",
     emoji: "💾",
     command: {
       base: "git commit",
@@ -301,8 +301,8 @@ export const goals: Goal[] = [
   {
     id: "branch",
     category: "branch",
-    title: "ブランチ操作",
-    description: "一覧・作成・削除",
+    title: "ブランチを操作する",
+    description: "ブランチの一覧表示・作成・削除を行う",
     emoji: "🌿",
     command: {
       base: "git branch",
@@ -378,7 +378,7 @@ export const goals: Goal[] = [
     id: "switch",
     category: "branch",
     title: "ブランチを切り替える",
-    description: "別ブランチへ移動、または作成して移動",
+    description: "別ブランチへ移動する（作成しながらの移動も可）",
     emoji: "🔀",
     command: {
       base: "git switch",
@@ -413,7 +413,7 @@ export const goals: Goal[] = [
     id: "merge",
     category: "branch",
     title: "ブランチをマージする",
-    description: "feature を main などに統合する",
+    description: "別ブランチの変更を現在のブランチに統合する",
     emoji: "🔗",
     command: {
       base: "git merge",
@@ -439,8 +439,8 @@ export const goals: Goal[] = [
   {
     id: "rebase",
     category: "branch",
-    title: "リベースする",
-    description: "main の最新の上に feature のコミットを載せ直す",
+    title: "コミットをリベースする",
+    description: "別ブランチの先端にコミットを載せ直す",
     emoji: "📐",
     command: {
       base: "git rebase",
@@ -467,7 +467,7 @@ export const goals: Goal[] = [
     id: "cherry-pick",
     category: "branch",
     title: "コミットを取り込む",
-    description: "特定コミットの変更だけ現在のブランチに適用",
+    description: "指定コミットの変更だけを現在のブランチに適用する",
     emoji: "🍒",
     command: {
       base: "git cherry-pick",
@@ -488,7 +488,7 @@ export const goals: Goal[] = [
     id: "remote",
     category: "remote",
     title: "リモートを管理する",
-    description: "一覧表示・origin 等の登録",
+    description: "リモートの一覧表示や URL の登録を行う",
     emoji: "🔗",
     command: {
       base: "git remote",
@@ -544,7 +544,7 @@ export const goals: Goal[] = [
     id: "push",
     category: "remote",
     title: "リモートに push する",
-    description: "ローカルコミットを origin 等に送信",
+    description: "ローカルのコミットをリモートへ送信する",
     emoji: "⬆️",
     command: {
       base: "git push",
@@ -598,7 +598,7 @@ export const goals: Goal[] = [
     id: "pull",
     category: "remote",
     title: "リモートの最新を取り込む",
-    description: "fetch + merge（または rebase）で同期",
+    description: "リモートの変更を取得して取り込む",
     emoji: "⬇️",
     command: {
       base: "git pull",
@@ -631,8 +631,8 @@ export const goals: Goal[] = [
   {
     id: "fetch",
     category: "remote",
-    title: "fetch する",
-    description: "リモートの最新情報を取得（マージはしない）",
+    title: "リモートの更新を取得する",
+    description: "リモートの最新情報だけ取得する（マージはしない）",
     emoji: "📡",
     command: {
       base: "git fetch",
@@ -665,8 +665,8 @@ export const goals: Goal[] = [
   {
     id: "tag",
     category: "remote",
-    title: "タグを操作する",
-    description: "リリースタグの作成・一覧",
+    title: "タグを管理する",
+    description: "リリースタグの一覧表示や作成を行う",
     emoji: "🏷️",
     command: {
       base: "git tag",
@@ -720,7 +720,7 @@ export const goals: Goal[] = [
     id: "restore",
     category: "recovery",
     title: "ファイル変更を元に戻す",
-    description: "作業ツリー / ステージを復元",
+    description: "作業ツリーやステージの内容を復元する",
     emoji: "↩️",
     command: {
       base: "git restore",
@@ -763,8 +763,8 @@ export const goals: Goal[] = [
   {
     id: "reset",
     category: "recovery",
-    title: "HEAD / ステージを巻き戻す",
-    description: "ローカル履歴のポインタ移動",
+    title: "HEAD やステージを巻き戻す",
+    description: "ブランチの先頭（HEAD）やステージの位置を移す",
     emoji: "⏪",
     command: {
       base: "git reset",
@@ -810,7 +810,7 @@ export const goals: Goal[] = [
     id: "revert",
     category: "recovery",
     title: "コミットを打ち消す",
-    description: "履歴を消さず逆変更のコミットを追加",
+    description: "打ち消し用の新しいコミットを追加する",
     emoji: "🔁",
     command: {
       base: "git revert",
@@ -828,8 +828,8 @@ export const goals: Goal[] = [
   {
     id: "stash",
     category: "recovery",
-    title: "stash 操作",
-    description: "変更の退避・適用",
+    title: "変更を stash する",
+    description: "未コミットの変更を一時退避したり戻したりする",
     emoji: "📦",
     command: {
       base: "git stash",
@@ -907,7 +907,7 @@ export const goals: Goal[] = [
     id: "status",
     category: "workspace",
     title: "作業ツリーの状態を確認する",
-    description: "未ステージ・ステージ済み・未追跡ファイルを把握する",
+    description: "未ステージ・ステージ済み・未追跡の状態を表示する",
     emoji: "📊",
     command: {
       base: "git status",
@@ -924,8 +924,8 @@ export const goals: Goal[] = [
   {
     id: "diff",
     category: "workspace",
-    title: "差分を見る",
-    description: "未ステージ / ステージ済み / ブランチ間の変更を確認",
+    title: "変更の差分を確認する",
+    description: "作業ツリー・ステージ・ブランチ間の差分を表示する",
     emoji: "🔍",
     command: {
       base: "git diff",
@@ -1044,8 +1044,8 @@ export const goals: Goal[] = [
   {
     id: "log",
     category: "history",
-    title: "コミット履歴を見る",
-    description: "ブランチのコミット履歴を確認",
+    title: "コミット履歴を確認する",
+    description: "ブランチ上のコミット履歴を表示する",
     emoji: "📜",
     command: {
       base: "git log",
@@ -1090,8 +1090,8 @@ export const goals: Goal[] = [
   {
     id: "show",
     category: "history",
-    title: "特定コミットの中身を見る",
-    description: "1コミット分の diff",
+    title: "特定コミットの内容を確認する",
+    description: "指定コミットの差分やメタ情報を表示する",
     emoji: "🔬",
     command: {
       base: "git show",

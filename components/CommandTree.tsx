@@ -65,7 +65,7 @@ export function CommandTree({
                 type="button"
                 onClick={() => toggleCategory(category.id)}
                 aria-expanded={isOpen}
-                className={`flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm transition hover:bg-surface/60 ${
+                className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition hover:bg-surface/60 ${
                   hasSelected ? "text-foreground" : "text-muted"
                 }`}
               >
@@ -76,7 +76,7 @@ export function CommandTree({
                   {isOpen ? "▾" : "▸"}
                 </span>
                 <span aria-hidden>{category.emoji}</span>
-                <span className="min-w-0 flex-1 font-medium text-foreground">
+                <span className="min-w-0 flex-1 truncate font-medium text-foreground">
                   {category.label}
                 </span>
                 <span className="shrink-0 text-[10px] text-muted/70">
@@ -94,19 +94,22 @@ export function CommandTree({
                           type="button"
                           onClick={() => onSelectGoal(goal)}
                           aria-current={isSelected ? "true" : undefined}
-                          className={`flex w-full items-center gap-2 border-l-2 py-2 pr-3 pl-7 text-left transition ${
+                          className={`w-full border-l-2 py-2 pr-3 pl-7 text-left transition ${
                             isSelected
                               ? "border-accent bg-accent/10"
                               : "border-transparent hover:border-accent/30 hover:bg-surface/40"
                           }`}
                         >
                           <code
-                            className={`shrink-0 font-mono text-xs ${
+                            className={`block truncate font-mono text-xs ${
                               isSelected ? "text-accent" : "text-success/90"
                             }`}
                           >
                             {goal.command.base}
                           </code>
+                          <span className="mt-0.5 block truncate text-[11px] leading-snug text-muted">
+                            {goal.title}
+                          </span>
                         </button>
                       </li>
                     );

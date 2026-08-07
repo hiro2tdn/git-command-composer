@@ -9,10 +9,10 @@ export function GoalPicker() {
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
 
   return (
-    <div className="lg:grid lg:min-h-[calc(100vh-12rem)] lg:grid-cols-[minmax(240px,300px)_1fr] lg:items-stretch lg:gap-6">
+    <div className="lg:grid lg:min-h-[calc(100vh-12rem)] lg:grid-cols-[minmax(300px,380px)_1fr] lg:items-stretch lg:gap-6">
       <aside className="mb-6 flex min-h-0 flex-col lg:sticky lg:top-6 lg:mb-0 lg:max-h-[calc(100vh-8rem)]">
         <CommandTree
-          className="min-h-[280px] flex-1 lg:min-h-0"
+          className="min-h-[320px] flex-1 lg:min-h-0"
           selectedGoalId={selectedGoal?.id ?? null}
           onSelectGoal={setSelectedGoal}
         />
