@@ -7,13 +7,21 @@ import {
   type OptionState,
   type PathspecValue,
 } from "@/lib/buildCommand";
-import type { Goal } from "@/lib/goals";
+import type { Goal, TextOption } from "@/lib/goals";
 import { CopyButton } from "./CopyButton";
 import { PathspecBuilder } from "./PathspecBuilder";
 
 type CommandPanelProps = {
   goal: Goal;
 };
+
+function isTextRequired(opt: TextOption, state: OptionState): boolean {
+  if (opt.required) return true;
+  if (opt.requiredWhenToggle && state.toggles[opt.requiredWhenToggle]) {
+    return true;
+  }
+  return false;
+}
 
 function shouldShowToggle(
   goal: Goal,
@@ -253,39 +261,28 @@ export function CommandPanel({ goal }: CommandPanelProps) {
     <section
       className="animate-in overflow-hidden rounded-2xl border border-accent/30 bg-card shadow-2xl shadow-black/40"
       aria-live="polite"
+      aria-label={goal.title}
     >
       <div className="sticky top-0 z-10 border-b border-border bg-card/95 backdrop-blur-sm">
-        <div className="p-6 pb-4">
-          <div className="mb-2 flex items-center gap-2">
-            <span className="text-2xl" aria-hidden>
-              {goal.emoji}
-            </span>
-            <h2 className="text-xl font-bold text-foreground">
-              {goal.title}
-            </h2>
-          </div>
-          <p className="text-sm text-muted">{goal.description}</p>
-          {goal.warning && (
-            <p className="mt-1.5 text-sm text-danger" role="note">
-              {goal.warning}
-            </p>
-          )}
-        </div>
-
-        <div className="border-t border-border/60 bg-background/80 px-6 py-4">
+        <div className="bg-background/80 px-6 py-4">
           <div className="mb-2">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted">
+            <p className="text-sm font-semibold text-foreground">
               完成したコマンド
             </p>
           </div>
-            <div className="flex overflow-hidden rounded-lg border border-success/20 bg-card">
-              <pre className="min-w-0 flex-1 overflow-x-auto px-4 py-3 font-mono text-sm text-success">
-                <code>$ {command}</code>
-              </pre>
-              <div className="flex shrink-0 items-center border-l border-border/60 bg-background/50 px-2">
-                <CopyButton command={command} label={goal.title} />
-              </div>
+          <div className="flex overflow-hidden rounded-lg border border-success/20 bg-card">
+            <pre className="min-w-0 flex-1 overflow-x-auto px-4 py-3 font-mono text-sm text-success">
+              <code>$ {command}</code>
+            </pre>
+            <div className="flex shrink-0 items-center border-l border-border/60 bg-background/50 px-2">
+              <CopyButton command={command} label={goal.title} />
             </div>
+          </div>
+          {goal.warning && (
+            <p className="mt-3 text-sm text-danger" role="note">
+              {goal.warning}
+            </p>
+          )}
         </div>
       </div>
 
@@ -297,6 +294,74 @@ export function CommandPanel({ goal }: CommandPanelProps) {
               この操作に追加オプションはありません。上のコマンドをそのままコピーしてください。
             </p>
           </div>
+        )}
+
+        {modeRadios && modeRadios.length > 0 && (
+          <fieldset className="space-y-3">
+            <legend className="mb-1 text-sm font-semibold text-foreground">
+              動作モード
+              <span className="ml-2 text-xs font-normal text-muted">
+                （どれか1つ · 必須）
+              </span>
+            </legend>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {modeRadios.map((opt) => {
+                const isSelected = state.radios[opt.group] === opt.id;
+                return (
+                  <label
+                    key={opt.id}
+                    className={`flex cursor-pointer gap-3 rounded-xl border p-3.5 transition ${
+                      isSelected
+                        ? opt.danger
+                          ? "border-danger/40 bg-danger/10 ring-1 ring-danger/20"
+                          : "border-accent/50 bg-accent/10 ring-1 ring-accent/20"
+                        : "border-border bg-background hover:border-accent/30 hover:bg-surface/30"
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name={`radio-${goal.id}-${opt.group}`}
+                      checked={isSelected}
+                      onChange={() => radioHandler(opt.group, opt.id)}
+                      className="sr-only"
+                    />
+                    <span
+                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${
+                        isSelected
+                          ? opt.danger
+                            ? "border-danger bg-danger"
+                            : "border-accent bg-accent"
+                          : "border-border bg-card"
+                      }`}
+                      aria-hidden
+                    >
+                      {isSelected && (
+                        <span className="h-2 w-2 rounded-full bg-background" />
+                      )}
+                    </span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex flex-wrap items-center gap-2">
+                        <code className="rounded bg-card px-1.5 py-0.5 font-mono text-xs text-accent">
+                          {opt.flag}
+                        </code>
+                        <span className="text-sm font-medium text-foreground">
+                          {opt.label}
+                        </span>
+                        {opt.danger && (
+                          <span className="rounded bg-danger/20 px-1.5 py-0.5 text-[10px] font-bold text-danger">
+                            注意
+                          </span>
+                        )}
+                      </span>
+                      <span className="mt-1.5 block text-xs leading-relaxed text-muted">
+                        {opt.description}
+                      </span>
+                    </span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
         )}
 
         {visibleToggles && visibleToggles.length > 0 && (
@@ -372,87 +437,17 @@ export function CommandPanel({ goal }: CommandPanelProps) {
           </fieldset>
         )}
 
-        {modeRadios && modeRadios.length > 0 && (
-          <fieldset className="space-y-3">
-            <legend className="mb-1 text-sm font-semibold text-foreground">
-              動作モード
-              <span className="ml-2 text-xs font-normal text-muted">
-                （どれか1つ · 必須）
-              </span>
-            </legend>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {modeRadios.map((opt) => {
-                const isSelected = state.radios[opt.group] === opt.id;
-                return (
-                  <label
-                    key={opt.id}
-                    className={`flex cursor-pointer gap-3 rounded-xl border p-3.5 transition ${
-                      isSelected
-                        ? opt.danger
-                          ? "border-danger/40 bg-danger/10 ring-1 ring-danger/20"
-                          : "border-accent/50 bg-accent/10 ring-1 ring-accent/20"
-                        : "border-border bg-background hover:border-accent/30 hover:bg-surface/30"
-                    }`}
-                  >
-                    <input
-                      type="radio"
-                      name={`radio-${goal.id}-${opt.group}`}
-                      checked={isSelected}
-                      onChange={() => radioHandler(opt.group, opt.id)}
-                      className="sr-only"
-                    />
-                    <span
-                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 transition ${
-                        isSelected
-                          ? opt.danger
-                            ? "border-danger bg-danger"
-                            : "border-accent bg-accent"
-                          : "border-border bg-card"
-                      }`}
-                      aria-hidden
-                    >
-                      {isSelected && (
-                        <span className="h-2 w-2 rounded-full bg-background" />
-                      )}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <code className="rounded bg-card px-1.5 py-0.5 font-mono text-xs text-accent">
-                          {opt.flag}
-                        </code>
-                        <span className="text-sm font-medium text-foreground">
-                          {opt.label}
-                        </span>
-                        {opt.danger && (
-                          <span className="rounded bg-danger/20 px-1.5 py-0.5 text-[10px] font-bold text-danger">
-                            注意
-                          </span>
-                        )}
-                      </span>
-                      <span className="mt-1.5 block text-xs leading-relaxed text-muted">
-                        {opt.description}
-                      </span>
-                    </span>
-                  </label>
-                );
-              })}
-            </div>
-          </fieldset>
-        )}
-
         {(visibleTexts?.length ?? 0) > 0 ||
         inlineRadioGroups.length > 0 ||
         (visiblePathspecs?.length ?? 0) > 0 ? (
           <fieldset className="space-y-3">
             <legend className="mb-1 text-sm font-semibold text-foreground">
               入力する値
-              <span className="ml-2 text-xs font-normal text-muted">
-                （任意）
-              </span>
             </legend>
             <div className="grid gap-3 sm:grid-cols-2">
               {visibleTexts?.flatMap((opt) => {
                 const hasValue = (state.texts[opt.id] ?? "").trim().length > 0;
+                const required = isTextRequired(opt, state);
                 const items = [
                   <div
                     key={opt.id}
@@ -472,6 +467,15 @@ export function CommandPanel({ goal }: CommandPanelProps) {
                         <span className="text-sm font-medium text-foreground">
                           {opt.label}
                         </span>
+                        {required ? (
+                          <span className="rounded bg-warning/15 px-1.5 py-0.5 text-[10px] font-medium text-warning">
+                            必須
+                          </span>
+                        ) : (
+                          <span className="rounded bg-surface px-1.5 py-0.5 text-[10px] text-muted">
+                            任意
+                          </span>
+                        )}
                         {hasValue && (
                           <span className="rounded bg-success/15 px-1.5 py-0.5 text-[10px] font-medium text-success">
                             入力済み
@@ -483,6 +487,8 @@ export function CommandPanel({ goal }: CommandPanelProps) {
                         value={state.texts[opt.id] ?? ""}
                         onChange={(e) => textHandler(opt.id, e.target.value)}
                         placeholder={opt.placeholder}
+                        required={required}
+                        aria-required={required || undefined}
                         className="mt-2 w-full rounded-lg border border-border bg-card px-3 py-2.5 font-mono text-sm text-foreground outline-none transition placeholder:text-muted/50 focus:border-accent focus:ring-1 focus:ring-accent/30"
                       />
                     </label>

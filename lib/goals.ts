@@ -63,6 +63,10 @@ export type TextOption = {
   description: string;
   defaultValue?: string;
   suffix?: boolean;
+  /** 未入力だとコマンドが成立しない */
+  required?: boolean;
+  /** 指定 toggle が ON のとき必須 */
+  requiredWhenToggle?: string;
   /** この toggle が ON のときだけ表示・適用 */
   requiresToggle?: string;
   /** いずれかの toggle が ON なら適用しない */
@@ -110,7 +114,6 @@ export type Goal = {
   id: string;
   category: CategoryId;
   title: string;
-  description: string;
   emoji: string;
   command: CommandConfig;
   related?: RelatedCommand[];
@@ -159,7 +162,7 @@ export const categories: Category[] = [
     id: "history",
     label: "履歴調査",
     emoji: "🔎",
-    description: "log / show",
+    description: "log / show / reflog",
   },
 ];
 
@@ -168,8 +171,7 @@ export const goals: Goal[] = [
   {
     id: "init",
     category: "setup",
-    title: "新しいリポジトリを初期化する",
-    description: "カレントディレクトリを Git リポジトリにする",
+    title: "カレントディレクトリを新しい Git リポジトリとして初期化する",
     emoji: "📁",
     command: {
       base: "git init",
@@ -178,7 +180,7 @@ export const goals: Goal[] = [
           id: "path",
           placeholder: ".",
           label: "ディレクトリ",
-          description: "省略時はカレント",
+          description: "初期化するディレクトリ（省略時はカレントディレクトリ）",
           suffix: true,
         },
       ],
@@ -187,8 +189,7 @@ export const goals: Goal[] = [
   {
     id: "clone",
     category: "setup",
-    title: "リポジトリをクローンする",
-    description: "リモートのリポジトリをローカルへ複製する",
+    title: "リモートリポジトリをローカルへクローンする",
     emoji: "📥",
     command: {
       base: "git clone",
@@ -198,20 +199,21 @@ export const goals: Goal[] = [
           flag: "-b",
           placeholder: "main",
           label: "ブランチ指定",
-          description: "チェックアウトするブランチ",
+          description: "clone 後に checkout するブランチ（省略時はデフォルトブランチ）",
         },
         {
           id: "url",
           placeholder: "https://github.com/user/repo.git",
           label: "リポジトリ URL",
           description: "クローン元の URL",
+          required: true,
           suffix: true,
         },
         {
           id: "directory",
           placeholder: "repo",
           label: "配置ディレクトリ名",
-          description: "省略時はリポジトリ名",
+          description: "clone 先のディレクトリ名（省略時はリポジトリ名）",
           suffix: true,
         },
       ],
@@ -223,7 +225,6 @@ export const goals: Goal[] = [
     id: "add",
     category: "commit",
     title: "変更をステージングする",
-    description: "変更を Index（ステージ）に載せる",
     emoji: "➕",
     command: {
       base: "git add",
@@ -232,15 +233,14 @@ export const goals: Goal[] = [
           id: "all",
           flag: "-A",
           label: "すべて",
-          description: "新規・変更・削除を含む全変更",
-          defaultSelected: true,
+          description: "新規・変更・削除をすべて対象にする",
           group: "scope",
         },
         {
           id: "update",
           flag: "-u",
           label: "追跡済みのみ",
-          description: "管理下ファイルの変更・削除だけ",
+          description: "追跡済みファイルの変更・削除のみ対象にする",
           group: "scope",
         },
       ],
@@ -249,7 +249,7 @@ export const goals: Goal[] = [
           id: "paths",
           placeholder: "src/app.ts",
           label: "パス指定",
-          description: "特定ファイル・ディレクトリだけ",
+          description: "対象ファイルやディレクトリ（-A/-u 選択時は省略可）",
           suffix: true,
         },
       ],
@@ -258,8 +258,7 @@ export const goals: Goal[] = [
   {
     id: "commit",
     category: "commit",
-    title: "コミットを作成する",
-    description: "ステージ済みの変更を履歴に記録する",
+    title: "ステージ済みの変更を履歴に記録する",
     emoji: "💾",
     command: {
       base: "git commit",
@@ -268,21 +267,21 @@ export const goals: Goal[] = [
           id: "amend",
           flag: "--amend",
           label: "直前コミットを修正",
-          description: "直前コミットに統合。push 済みなら force push が必要",
+          description: "直前のコミットに変更を統合（push 済みなら強制 push が必要）",
           danger: true,
         },
         {
           id: "no-edit",
           flag: "--no-edit",
           label: "メッセージ維持",
-          description: "amend 時、メッセージは変えず変更だけ統合",
+          description: "修正時もメッセージは変更しない",
           requiresToggle: "amend",
         },
         {
           id: "all",
           flag: "-a",
-          label: "追跡済みを自動 add",
-          description: "変更済み追跡ファイルを自動ステージしてコミット",
+          label: "追跡済みを自動ステージ",
+          description: "変更済みの追跡ファイルを自動でステージしてコミット",
         },
       ],
       texts: [
@@ -291,7 +290,7 @@ export const goals: Goal[] = [
           flag: "-m",
           placeholder: "feat: add user auth",
           label: "メッセージ",
-          description: "コミットメッセージ",
+          description: "コミットメッセージ（省略時はエディタを開く）",
         },
       ],
     },
@@ -301,8 +300,7 @@ export const goals: Goal[] = [
   {
     id: "branch",
     category: "branch",
-    title: "ブランチを操作する",
-    description: "ブランチの一覧表示・作成・削除を行う",
+    title: "ブランチの一覧表示・作成・削除を行う",
     emoji: "🌿",
     command: {
       base: "git branch",
@@ -319,7 +317,7 @@ export const goals: Goal[] = [
           id: "create",
           flag: "",
           label: "作成",
-          description: "ブランチを作る（切り替えは git switch）",
+          description: "ブランチを作成（切り替えは git switch）",
           group: "action",
         },
         {
@@ -333,7 +331,7 @@ export const goals: Goal[] = [
           id: "force-delete",
           flag: "-D",
           label: "強制削除",
-          description: "未マージでも削除",
+          description: "未マージのブランチも削除",
           group: "action",
           danger: true,
         },
@@ -349,25 +347,26 @@ export const goals: Goal[] = [
         {
           id: "verbose",
           flag: "-vv",
-          label: "upstream 付き",
-          description: "追跡ブランチと ahead/behind",
+          label: "ahead/behind 表示",
+          description: "追跡ブランチとの先行・遅延件数も表示",
           requiresRadio: { group: "action", id: "list" },
         },
       ],
       texts: [
         {
           id: "name",
-          placeholder: "feature/auth",
+          placeholder: "main",
           label: "ブランチ名",
-          description: "作成・削除対象",
+          description: "作成・削除対象のブランチ名",
+          required: true,
           suffix: true,
           excludeWhenRadio: { group: "action", id: "list" },
         },
         {
           id: "start-point",
-          placeholder: "origin/main",
+          placeholder: "HEAD",
           label: "起点",
-          description: "作成時の分岐元（省略時は HEAD）",
+          description: "新ブランチの分岐元（省略時は HEAD）",
           suffix: true,
           requiresRadio: { group: "action", id: "create" },
         },
@@ -377,8 +376,7 @@ export const goals: Goal[] = [
   {
     id: "switch",
     category: "branch",
-    title: "ブランチを切り替える",
-    description: "別ブランチへ移動する（作成しながらの移動も可）",
+    title: "別ブランチへ切り替える",
     emoji: "🔀",
     command: {
       base: "git switch",
@@ -386,23 +384,24 @@ export const goals: Goal[] = [
         {
           id: "create",
           flag: "-c",
-          label: "作成して切替",
-          description: "新ブランチを作ってその場で移動",
+          label: "作成して切り替え",
+          description: "新しいブランチを作成して移動",
         },
       ],
       texts: [
         {
           id: "branch",
-          placeholder: "feature/auth",
+          placeholder: "main",
           label: "ブランチ名",
-          description: "切り替え先",
+          description: "切り替え先のブランチ名",
+          required: true,
           suffix: true,
         },
         {
           id: "start-point",
-          placeholder: "origin/main",
+          placeholder: "HEAD",
           label: "起点",
-          description: "`-c` 使用時の分岐元",
+          description: "新ブランチの分岐元（省略時は HEAD）",
           suffix: true,
           requiresToggle: "create",
         },
@@ -412,8 +411,7 @@ export const goals: Goal[] = [
   {
     id: "merge",
     category: "branch",
-    title: "ブランチをマージする",
-    description: "別ブランチの変更を現在のブランチに統合する",
+    title: "別ブランチの変更を現在のブランチに統合する",
     emoji: "🔗",
     command: {
       base: "git merge",
@@ -421,16 +419,16 @@ export const goals: Goal[] = [
         {
           id: "no-ff",
           flag: "--no-ff",
-          label: "no-ff（マージコミット固定）",
-          description: "マージコミットを必ず作る",
+          label: "マージコミット固定",
+          description: "fast-forward せずマージコミットを残す",
         },
       ],
       texts: [
         {
           id: "branch",
-          placeholder: "feature/auth",
+          placeholder: "main",
           label: "マージ元ブランチ",
-          description: "現在のブランチに統合する元",
+          description: "統合元のブランチ（省略時は追跡ブランチ）",
           suffix: true,
         },
       ],
@@ -439,8 +437,7 @@ export const goals: Goal[] = [
   {
     id: "rebase",
     category: "branch",
-    title: "コミットをリベースする",
-    description: "別ブランチの先端にコミットを載せ直す",
+    title: "別ブランチの先端にコミットを並べ直す",
     emoji: "📐",
     command: {
       base: "git rebase",
@@ -449,7 +446,7 @@ export const goals: Goal[] = [
           id: "interactive",
           flag: "-i",
           label: "インタラクティブ編集",
-          description: "コミットの squash / reword / drop を編集",
+          description: "コミットの順序や内容を対話的に編集",
         },
       ],
       texts: [
@@ -457,7 +454,7 @@ export const goals: Goal[] = [
           id: "upstream",
           placeholder: "origin/main",
           label: "リベース先",
-          description: "載せ直す先（例: origin/main）",
+          description: "並べ直す基準ブランチ（省略時は追跡ブランチ）",
           suffix: true,
         },
       ],
@@ -466,8 +463,7 @@ export const goals: Goal[] = [
   {
     id: "cherry-pick",
     category: "branch",
-    title: "コミットを取り込む",
-    description: "指定コミットの変更だけを現在のブランチに適用する",
+    title: "指定コミットの変更だけを現在のブランチに取り込む",
     emoji: "🍒",
     command: {
       base: "git cherry-pick",
@@ -476,7 +472,8 @@ export const goals: Goal[] = [
           id: "rev",
           placeholder: "abc1234",
           label: "コミット",
-          description: "取り込むコミット hash",
+          description: "取り込むコミットの hash",
+          required: true,
           suffix: true,
         },
       ],
@@ -487,8 +484,7 @@ export const goals: Goal[] = [
   {
     id: "remote",
     category: "remote",
-    title: "リモートを管理する",
-    description: "リモートの一覧表示や URL の登録を行う",
+    title: "リモートの一覧表示や URL の登録を行う",
     emoji: "🔗",
     command: {
       base: "git remote",
@@ -514,8 +510,7 @@ export const goals: Goal[] = [
           id: "verbose",
           flag: "-v",
           label: "URL も表示",
-          description: "`git remote -v` と同じ",
-          defaultSelected: true,
+          description: "fetch / push の URL も表示",
           requiresRadio: { group: "action", id: "list" },
         },
       ],
@@ -524,8 +519,9 @@ export const goals: Goal[] = [
           id: "name",
           placeholder: "origin",
           label: "リモート名",
-          description: "通常は origin",
+          description: "追加するリモートの名前",
           defaultValue: "origin",
+          required: true,
           suffix: true,
           requiresRadio: { group: "action", id: "add" },
         },
@@ -534,6 +530,7 @@ export const goals: Goal[] = [
           placeholder: "https://github.com/user/repo.git",
           label: "URL",
           description: "リモートリポジトリの URL",
+          required: true,
           suffix: true,
           requiresRadio: { group: "action", id: "add" },
         },
@@ -543,8 +540,7 @@ export const goals: Goal[] = [
   {
     id: "push",
     category: "remote",
-    title: "リモートに push する",
-    description: "ローカルのコミットをリモートへ送信する",
+    title: "ローカルのコミットをリモートへ送信する",
     emoji: "⬆️",
     command: {
       base: "git push",
@@ -552,14 +548,14 @@ export const goals: Goal[] = [
         {
           id: "set-upstream",
           flag: "-u",
-          label: "upstream 設定",
-          description: "初回 push 時に追跡ブランチを設定",
+          label: "追跡ブランチ設定",
+          description: "初回 push 時に追跡ブランチを設定する",
         },
         {
           id: "force-with-lease",
           flag: "--force-with-lease",
-          label: "force-with-lease（安全な強制）",
-          description: "安全な force push",
+          label: "安全な強制 push",
+          description: "リモートの更新を確認してから上書きする",
           danger: true,
         },
         {
@@ -572,8 +568,8 @@ export const goals: Goal[] = [
         {
           id: "tags",
           flag: "--tags",
-          label: "tags も送る",
-          description: "タグも一緒に push",
+          label: "タグも送る",
+          description: "タグもリモートへ送る",
         },
       ],
       texts: [
@@ -581,14 +577,18 @@ export const goals: Goal[] = [
           id: "remote",
           placeholder: "origin",
           label: "リモート名",
-          description: "push 先リモート（省略時は origin）",
+          description:
+            "送信先リモート（省略時は追跡ブランチのリモート。削除時は必須）",
+          requiredWhenToggle: "delete",
           suffix: true,
         },
         {
           id: "branch",
-          placeholder: "feature/auth",
+          placeholder: "main",
           label: "ブランチ",
-          description: "push するブランチ",
+          description:
+            "送るブランチ（省略時は現在のブランチ。削除時は必須）",
+          requiredWhenToggle: "delete",
           suffix: true,
         },
       ],
@@ -597,8 +597,7 @@ export const goals: Goal[] = [
   {
     id: "pull",
     category: "remote",
-    title: "リモートの最新を取り込む",
-    description: "リモートの変更を取得して取り込む",
+    title: "リモートの変更を取得して取り込む",
     emoji: "⬇️",
     command: {
       base: "git pull",
@@ -606,8 +605,8 @@ export const goals: Goal[] = [
         {
           id: "rebase",
           flag: "--rebase",
-          label: "rebase で取込",
-          description: "マージコミットを作らずリベース",
+          label: "rebase で取り込む",
+          description: "マージコミットを作らず rebase する",
         },
       ],
       texts: [
@@ -615,14 +614,14 @@ export const goals: Goal[] = [
           id: "remote",
           placeholder: "origin",
           label: "リモート名",
-          description: "pull 元リモート（省略時は origin）",
+          description: "取得元リモート（省略時は追跡ブランチのリモート）",
           suffix: true,
         },
         {
           id: "branch",
           placeholder: "main",
           label: "ブランチ",
-          description: "取り込むブランチ",
+          description: "取得するブランチ（省略時は追跡ブランチ）",
           suffix: true,
         },
       ],
@@ -631,8 +630,7 @@ export const goals: Goal[] = [
   {
     id: "fetch",
     category: "remote",
-    title: "リモートの更新を取得する",
-    description: "リモートの最新情報だけ取得する（マージはしない）",
+    title: "リモートの最新情報を取得する（マージはしない）",
     emoji: "📡",
     command: {
       base: "git fetch",
@@ -646,7 +644,7 @@ export const goals: Goal[] = [
         {
           id: "prune",
           flag: "--prune",
-          label: "削除参照整理",
+          label: "削除済み参照を整理",
           description: "削除済みリモートブランチの参照を整理",
         },
       ],
@@ -655,7 +653,7 @@ export const goals: Goal[] = [
           id: "remote",
           placeholder: "origin",
           label: "リモート名",
-          description: "fetch 元リモート（省略時は origin）",
+          description: "取得元リモート（省略時は追跡ブランチのリモート、未設定時は origin）",
           suffix: true,
           excludeWhenToggles: ["all"],
         },
@@ -665,8 +663,7 @@ export const goals: Goal[] = [
   {
     id: "tag",
     category: "remote",
-    title: "タグを管理する",
-    description: "リリースタグの一覧表示や作成を行う",
+    title: "リリースタグの一覧表示や作成を行う",
     emoji: "🏷️",
     command: {
       base: "git tag",
@@ -682,15 +679,15 @@ export const goals: Goal[] = [
         {
           id: "annotated",
           flag: "-a",
-          label: "annotated 作成",
-          description: "メッセージ付きタグを作成",
+          label: "注釈付き",
+          description: "メッセージ付きのタグを作成",
           group: "action",
         },
         {
           id: "lightweight",
           flag: "",
-          label: "lightweight 作成",
-          description: "メッセージなしタグを作成",
+          label: "軽量",
+          description: "メッセージなしのタグを作成",
           group: "action",
         },
       ],
@@ -699,7 +696,8 @@ export const goals: Goal[] = [
           id: "name",
           placeholder: "v1.0.0",
           label: "タグ名",
-          description: "例: v1.0.0",
+          description: "作成するタグ名（例: v1.0.0）",
+          required: true,
           suffix: true,
           excludeWhenRadio: { group: "action", id: "list" },
         },
@@ -708,7 +706,7 @@ export const goals: Goal[] = [
           flag: "-m",
           placeholder: "Release v1.0.0",
           label: "メッセージ",
-          description: "annotated タグ用",
+          description: "タグメッセージ（省略時はエディタを開く）",
           requiresRadio: { group: "action", id: "annotated" },
         },
       ],
@@ -719,8 +717,7 @@ export const goals: Goal[] = [
   {
     id: "restore",
     category: "recovery",
-    title: "ファイル変更を元に戻す",
-    description: "作業ツリーやステージの内容を復元する",
+    title: "作業ツリーやステージのファイル変更を元に戻す",
     emoji: "↩️",
     command: {
       base: "git restore",
@@ -729,7 +726,7 @@ export const goals: Goal[] = [
           id: "worktree",
           flag: "",
           label: "作業ツリーを破棄",
-          description: "編集内容を復元元の状態に戻す",
+          description: "編集内容を元の状態に戻す",
           group: "target",
           defaultSelected: true,
         },
@@ -737,7 +734,7 @@ export const goals: Goal[] = [
           id: "staged",
           flag: "--staged",
           label: "ステージ解除",
-          description: "Index を復元元に合わせる（作業ツリーは残る）",
+          description: "ステージを元に戻す（作業ツリーはそのまま）",
           group: "target",
         },
       ],
@@ -746,14 +743,15 @@ export const goals: Goal[] = [
           id: "source",
           flag: "--source",
           placeholder: "HEAD~1",
-          label: "リストア元",
-          description: "hash、HEAD~1、ブランチ名など（省略可）",
+          label: "復元元",
+          description: "コミット hash や HEAD~1 など（省略時は HEAD）",
         },
         {
           id: "paths",
           placeholder: "src/app.ts",
           label: "対象パス",
           description: "復元するファイル・ディレクトリ",
+          required: true,
           suffix: true,
         },
       ],
@@ -763,8 +761,7 @@ export const goals: Goal[] = [
   {
     id: "reset",
     category: "recovery",
-    title: "HEAD やステージを巻き戻す",
-    description: "ブランチの先頭（HEAD）やステージの位置を移す",
+    title: "ブランチの先頭（HEAD）やステージの位置を巻き戻す",
     emoji: "⏪",
     command: {
       base: "git reset",
@@ -773,22 +770,22 @@ export const goals: Goal[] = [
           id: "soft",
           flag: "--soft",
           label: "soft（コミットのみ取消）",
-          description: "コミットだけ取り消し。変更はステージに残る",
+          description: "コミットのみ取り消し（変更はステージに残る）",
           group: "mode",
-          defaultSelected: true,
         },
         {
           id: "mixed",
           flag: "--mixed",
           label: "mixed（ステージも取消）",
-          description: "コミット + ステージ取り消し",
+          description: "コミットとステージを取り消し",
           group: "mode",
+          defaultSelected: true,
         },
         {
           id: "hard",
           flag: "--hard",
           label: "hard（破棄あり）",
-          description: "コミット + ステージ + 作業ツリーを破棄",
+          description: "コミット・ステージ・作業ツリーを破棄",
           group: "mode",
           danger: true,
         },
@@ -796,21 +793,20 @@ export const goals: Goal[] = [
       texts: [
         {
           id: "rev",
-          placeholder: "HEAD~1",
-          label: "移動先",
-          description: "HEAD~1 はコミットが2件以上あるときのみ有効",
+          placeholder: "HEAD",
+          label: "戻す位置",
+          description: "戻す位置（省略時は HEAD）",
           suffix: true,
         },
       ],
     },
     warning:
-      "push 済みコミットを消すと force push が必要。共有ブランチでは revert を使ってください",
+      "push 済みのコミットを消すと強制 push が必要です。共有ブランチでは revert を使ってください",
   },
   {
     id: "revert",
     category: "recovery",
-    title: "コミットを打ち消す",
-    description: "打ち消し用の新しいコミットを追加する",
+    title: "打ち消し用の新しいコミットを追加する",
     emoji: "🔁",
     command: {
       base: "git revert",
@@ -819,7 +815,8 @@ export const goals: Goal[] = [
           id: "rev",
           placeholder: "abc1234",
           label: "対象コミット",
-          description: "打ち消すコミット hash",
+          description: "打ち消すコミットの hash",
+          required: true,
           suffix: true,
         },
       ],
@@ -828,8 +825,7 @@ export const goals: Goal[] = [
   {
     id: "stash",
     category: "recovery",
-    title: "変更を stash する",
-    description: "未コミットの変更を一時退避したり戻したりする",
+    title: "未コミットの変更を一時退避したり戻したりする",
     emoji: "📦",
     command: {
       base: "git stash",
@@ -846,21 +842,21 @@ export const goals: Goal[] = [
           id: "pop",
           flag: "pop",
           label: "適用して削除",
-          description: "最新 stash を適用して削除",
+          description: "最新の退避を適用して削除",
           group: "subcmd",
         },
         {
           id: "apply",
           flag: "apply",
           label: "適用",
-          description: "stash を適用（一覧には残る）",
+          description: "退避を適用（一覧には残る）",
           group: "subcmd",
         },
         {
           id: "list",
           flag: "list",
           label: "一覧",
-          description: "退避済み stash の一覧",
+          description: "退避済みの一覧を表示",
           group: "subcmd",
         },
       ],
@@ -868,7 +864,7 @@ export const goals: Goal[] = [
         {
           id: "include-untracked",
           flag: "-u",
-          label: "untracked 含む",
+          label: "未追跡も含む",
           description: "未追跡ファイルも退避",
           requiresRadio: { group: "subcmd", id: "push" },
         },
@@ -879,22 +875,22 @@ export const goals: Goal[] = [
           flag: "-m",
           placeholder: "WIP",
           label: "メッセージ",
-          description: "stash の識別用メモ",
+          description: "退避の識別メモ（省略時は自動生成）",
           requiresRadio: { group: "subcmd", id: "push" },
         },
         {
           id: "ref",
           placeholder: "stash@{0}",
-          label: "stash 指定",
-          description: "省略時は最新",
+          label: "退避の指定",
+          description: "対象の退避（省略時は stash@{0}）",
           suffix: true,
           requiresRadio: { group: "subcmd", id: "pop" },
         },
         {
           id: "ref-apply",
           placeholder: "stash@{0}",
-          label: "stash 指定",
-          description: "省略時は最新",
+          label: "退避の指定",
+          description: "対象の退避（省略時は stash@{0}）",
           suffix: true,
           requiresRadio: { group: "subcmd", id: "apply" },
         },
@@ -906,8 +902,7 @@ export const goals: Goal[] = [
   {
     id: "status",
     category: "workspace",
-    title: "作業ツリーの状態を確認する",
-    description: "未ステージ・ステージ済み・未追跡の状態を表示する",
+    title: "未ステージ・ステージ済み・未追跡の状態を確認する",
     emoji: "📊",
     command: {
       base: "git status",
@@ -924,8 +919,7 @@ export const goals: Goal[] = [
   {
     id: "diff",
     category: "workspace",
-    title: "変更の差分を確認する",
-    description: "作業ツリー・ステージ・ブランチ間の差分を表示する",
+    title: "作業ツリー・ステージ・ブランチ間の差分を確認する",
     emoji: "🔍",
     command: {
       base: "git diff",
@@ -934,7 +928,7 @@ export const goals: Goal[] = [
           id: "worktree",
           flag: "",
           label: "作業ツリー",
-          description: "未コミット変更（デフォルト）",
+          description: "作業ツリーとステージの未コミット変更",
           group: "compare",
           defaultSelected: true,
         },
@@ -942,14 +936,14 @@ export const goals: Goal[] = [
           id: "branches",
           flag: "",
           label: "ブランチ比較",
-          description: "2つのブランチ・コミット間の差分",
+          description: "2つのブランチやコミット間の差分",
           group: "compare",
         },
         {
           id: "two-dot",
           flag: "",
           label: "直接比較 (..)",
-          description: "main..feature",
+          description: "比較範囲の書き方（例: main..feature）",
           group: "range-syntax",
           groupLabel: "比較の書き方",
           groupInsertAfter: "branch-to",
@@ -961,7 +955,7 @@ export const goals: Goal[] = [
           id: "three-dot",
           flag: "",
           label: "共通祖先差分",
-          description: "共通祖先からの差分（main...feature）",
+          description: "共通祖先からの差分（例: main...feature）",
           group: "range-syntax",
           defaultSelected: true,
           requiresRadio: { group: "compare", id: "branches" },
@@ -974,32 +968,32 @@ export const goals: Goal[] = [
           id: "no-pager",
           flag: "--no-pager",
           label: "ページャ無効",
-          description: "ページャを使わず stdout に出力（スクリプト向け）",
+          description: "ページャなしで標準出力へ出す（スクリプト向け）",
           global: true,
         },
         {
           id: "no-color",
           flag: "--no-color",
           label: "色なし",
-          description: "ANSI カラー出力を無効化",
+          description: "色付き出力を無効化",
         },
         {
           id: "staged",
           flag: "--staged",
           label: "ステージ済み",
-          description: "次のコミットに入る変更だけ",
+          description: "ステージ済みの変更のみ",
         },
         {
           id: "stat",
           flag: "--stat",
           label: "統計のみ",
-          description: "ファイルごとの追加/削除行数",
+          description: "追加・削除行数の概要のみ",
         },
         {
           id: "name-only",
           flag: "--name-only",
           label: "ファイル名のみ",
-          description: "変更されたファイルパスだけ",
+          description: "変更ファイルのパスのみ",
         },
       ],
       texts: [
@@ -1007,7 +1001,7 @@ export const goals: Goal[] = [
           id: "branch-from",
           placeholder: "HEAD",
           label: "比較元",
-          description: "差分の起点（省略時は HEAD）",
+          description: "比較元（省略時は HEAD）",
           suffix: true,
           requiresRadio: { group: "compare", id: "branches" },
           combineWith: {
@@ -1019,9 +1013,10 @@ export const goals: Goal[] = [
         },
         {
           id: "branch-to",
-          placeholder: "feature/auth",
+          placeholder: "main",
           label: "比較先",
-          description: "差分の終点",
+          description:
+            "比較先（省略時は比較元のみ、または作業ツリーとの差分）",
           requiresRadio: { group: "compare", id: "branches" },
         },
       ],
@@ -1029,7 +1024,7 @@ export const goals: Goal[] = [
         {
           id: "paths",
           label: "対象パス",
-          description: "含めるパスと除外するパスを指定",
+          description: "対象パスの指定（省略時はリポジトリ全体）",
           excludeSuggestions: [
             "package-lock.json",
             "yarn.lock",
@@ -1044,8 +1039,7 @@ export const goals: Goal[] = [
   {
     id: "log",
     category: "history",
-    title: "コミット履歴を確認する",
-    description: "ブランチ上のコミット履歴を表示する",
+    title: "ブランチ上のコミット履歴を確認する",
     emoji: "📜",
     command: {
       base: "git log",
@@ -1054,7 +1048,7 @@ export const goals: Goal[] = [
           id: "oneline",
           flag: "--oneline",
           label: "1行表示",
-          description: "ハッシュ + メッセージを1行ずつ",
+          description: "コミット hash とメッセージを1行ずつ表示",
         },
         {
           id: "graph",
@@ -1075,13 +1069,13 @@ export const goals: Goal[] = [
           flag: "-n",
           placeholder: "20",
           label: "件数制限",
-          description: "直近 N 件だけ",
+          description: "表示件数の上限（省略時は制限なし）",
         },
         {
           id: "path",
           placeholder: "-- src/app.ts",
           label: "パス指定",
-          description: "特定ファイルの履歴だけ見る",
+          description: "特定ファイルの履歴のみ（省略時は全ファイル）",
           suffix: true,
         },
       ],
@@ -1090,8 +1084,7 @@ export const goals: Goal[] = [
   {
     id: "show",
     category: "history",
-    title: "特定コミットの内容を確認する",
-    description: "指定コミットの差分やメタ情報を表示する",
+    title: "指定コミットの差分やメタ情報を確認する",
     emoji: "🔬",
     command: {
       base: "git show",
@@ -1099,8 +1092,8 @@ export const goals: Goal[] = [
         {
           id: "stat",
           flag: "--stat",
-          label: "stat のみ",
-          description: "diff なしでファイル統計だけ",
+          label: "統計のみ",
+          description: "差分なしで変更ファイルの統計のみ",
         },
       ],
       texts: [
@@ -1108,7 +1101,40 @@ export const goals: Goal[] = [
           id: "rev",
           placeholder: "HEAD",
           label: "コミット",
-          description: "hash、HEAD、ブランチ名など（省略時は HEAD）",
+          description: "コミット hash やブランチ名（省略時は HEAD）",
+          suffix: true,
+        },
+      ],
+    },
+  },
+  {
+    id: "reflog",
+    category: "history",
+    title: "HEAD やブランチの移動履歴を確認する",
+    emoji: "🧭",
+    command: {
+      base: "git reflog",
+      toggles: [
+        {
+          id: "date-iso",
+          flag: "--date=iso",
+          label: "日時を表示",
+          description: "各エントリに日時を付ける",
+        },
+      ],
+      texts: [
+        {
+          id: "count",
+          flag: "-n",
+          placeholder: "20",
+          label: "件数制限",
+          description: "表示件数の上限（省略時は制限なし）",
+        },
+        {
+          id: "ref",
+          placeholder: "HEAD",
+          label: "対象",
+          description: "ブランチ名など（省略時は HEAD）",
           suffix: true,
         },
       ],

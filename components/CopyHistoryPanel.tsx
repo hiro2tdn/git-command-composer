@@ -45,18 +45,18 @@ export function CopyHistoryPanel() {
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex flex-wrap items-center gap-2">
                 {entry.label && (
-                  <span className="rounded-full bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">
+                  <span className="rounded-full bg-accent/10 px-2 py-0.5 text-xs font-medium text-accent">
                     {entry.label}
                   </span>
                 )}
                 <time
-                  className="text-[10px] text-muted"
+                  className="text-xs text-muted"
                   dateTime={new Date(entry.copiedAt).toISOString()}
                 >
                   {formatCopiedAt(entry.copiedAt)}
                 </time>
               </div>
-              <pre className="overflow-x-auto font-mono text-xs text-success">
+              <pre className="overflow-x-auto font-mono text-sm text-success">
                 <code>{entry.command}</code>
               </pre>
             </div>

@@ -19,9 +19,7 @@ export function CommandTree({
   onSelectGoal,
   className = "",
 }: CommandTreeProps) {
-  const [expanded, setExpanded] = useState<Set<CategoryId>>(
-    () => new Set(categories.map((c) => c.id))
-  );
+  const [expanded, setExpanded] = useState<Set<CategoryId>>(() => new Set());
 
   useEffect(() => {
     if (!selectedGoalId) return;
@@ -79,9 +77,6 @@ export function CommandTree({
                 <span className="min-w-0 flex-1 truncate font-medium text-foreground">
                   {category.label}
                 </span>
-                <span className="shrink-0 text-[10px] text-muted/70">
-                  {goals.length}
-                </span>
               </button>
 
               {isOpen && (
@@ -94,20 +89,20 @@ export function CommandTree({
                           type="button"
                           onClick={() => onSelectGoal(goal)}
                           aria-current={isSelected ? "true" : undefined}
-                          className={`w-full border-l-2 py-2 pr-3 pl-7 text-left transition ${
+                          className={`w-full border-l-2 py-2 pr-3 pl-6 text-left transition ${
                             isSelected
                               ? "border-accent bg-accent/10"
                               : "border-transparent hover:border-accent/30 hover:bg-surface/40"
                           }`}
                         >
                           <code
-                            className={`block truncate font-mono text-xs ${
+                            className={`block font-mono text-sm ${
                               isSelected ? "text-accent" : "text-success/90"
                             }`}
                           >
                             {goal.command.base}
                           </code>
-                          <span className="mt-0.5 block truncate text-[11px] leading-snug text-muted">
+                          <span className="mt-0.5 block text-xs leading-snug text-muted">
                             {goal.title}
                           </span>
                         </button>
